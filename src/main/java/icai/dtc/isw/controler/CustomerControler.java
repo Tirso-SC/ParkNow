@@ -11,4 +11,5 @@ public class CustomerControler {
 		customerDAO.getClientes(lista);
 	}
 	public Customer getCustomer(int id) {return(customerDAO.getCliente(id));}
+	public Customer getCustomerByName(String name) {return(customerDAO.getClientePorNombre(name));}
 }

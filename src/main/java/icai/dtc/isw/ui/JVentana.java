@@ -4,75 +4,87 @@ import icai.dtc.isw.client.Client;
 import icai.dtc.isw.domain.Customer;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.util.HashMap;
 
 public class JVentana extends JFrame {
+
+    private JTextField txtUsuario;
+
     public static void main(String[] args) {
         new JVentana();
     }
-    private int id;
+
     public JVentana() {
-        super("INGENIERÍA DEL SOFTWARE");
-        this.setLayout(new BorderLayout());
-        //Pongo un panel arriba con el título
+        super("Park Now");
+
+        // Panel principal contenedor con margen alrededor (arriba, izquierda, abajo, derecha)
+        JPanel pnlContenedor = new JPanel(new BorderLayout(15, 15));
+        pnlContenedor.setBorder(new EmptyBorder(25, 30, 25, 30));
+        this.setContentPane(pnlContenedor);
+
+        // 1. Panel Norte: Título de la aplicación
         JPanel pnlNorte = new JPanel();
-        JLabel lblTitulo = new JLabel("Prueba COMUNICACIÓN", SwingConstants.CENTER);
-        lblTitulo.setFont(new Font("Courier", Font.BOLD, 20));
+        JLabel lblTitulo = new JLabel("ParkNow", SwingConstants.CENTER);
+        lblTitulo.setFont(new Font("Arial", Font.BOLD, 22));
         pnlNorte.add(lblTitulo);
-        this.add(pnlNorte, BorderLayout.NORTH);
+        pnlContenedor.add(pnlNorte, BorderLayout.NORTH);
 
-        //Pongo el panel central el botón
+        // 2. Panel Centro: Etiqueta y campo de texto con margen y altura cómoda
         JPanel pnlCentro = new JPanel();
+        pnlCentro.setLayout(new GridLayout(2, 1, 8, 8));
 
-        JLabel lblId = new JLabel("Introduzca el id", SwingConstants.CENTER);
-        JButton btnInformacion = new JButton("Recibir información");
-        JTextField txtId = new JTextField();
-        txtId.setBounds(new Rectangle(250,150,250,150));
-        txtId.setHorizontalAlignment(JTextField.LEFT);
-        pnlCentro.add(lblId);
-        pnlCentro.add(txtId);
-        pnlCentro.add(btnInformacion);
-        pnlCentro.setLayout(new BoxLayout(pnlCentro, BoxLayout.	X_AXIS));
-        this.add(pnlCentro, BorderLayout.CENTER);
+        JLabel lblUsuario = new JLabel("Iniciar sesión");
+        lblUsuario.setFont(new Font("Arial", Font.PLAIN, 15));
 
-        //El Sur lo hago para recoger el resultado
+        txtUsuario = new JTextField();
+        txtUsuario.setFont(new Font("Arial", Font.PLAIN, 14));
+        txtUsuario.setPreferredSize(new Dimension(300, 35));
+
+        pnlCentro.add(lblUsuario);
+        pnlCentro.add(txtUsuario);
+        pnlContenedor.add(pnlCentro, BorderLayout.CENTER);
+
+        // 3. Panel Sur: Para Botón Entrar
         JPanel pnlSur = new JPanel();
-        JLabel lblResultado = new JLabel("El resultado obtenido es: ", SwingConstants.CENTER);
-        JTextField txtResultado = new JTextField();
-        txtResultado.setBounds(new Rectangle(250,150,250,150));
-        txtResultado.setEditable(false);
-        txtResultado.setHorizontalAlignment(JTextField.LEFT);
-        pnlSur.add(lblResultado);
-        pnlSur.add(txtResultado);
-        //Añado el listener al botón
-        btnInformacion.addActionListener(actionEvent -> {
-            id=Integer.parseInt(txtId.getText());
-            txtResultado.setText(recuperarInformacion());
-        });
-        pnlSur.setLayout(new BoxLayout(pnlSur, BoxLayout.X_AXIS));
-        this.add(pnlSur,BorderLayout.SOUTH);
+        JButton btnEntrar = new JButton("Entrar");
+        btnEntrar.setFont(new Font("Arial", Font.BOLD, 14));
+        btnEntrar.setPreferredSize(new Dimension(130, 36));
 
-        this.setSize(550,120);
+        btnEntrar.addActionListener(e -> {
+            String nombre = txtUsuario.getText().trim();
+            if (nombre.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Por favor, escribe un nombre de usuario.");
+                return;
+            }
+
+            Customer user = login(nombre);
+            if (user != null) {
+                JOptionPane.showMessageDialog(this, "¡Bienvenido, " + user.getName() + "!");
+                this.dispose();
+            } else {
+                JOptionPane.showMessageDialog(this, "Usuario no encontrado.");
+            }
+        });
+
+        pnlSur.add(btnEntrar);
+        pnlContenedor.add(pnlSur, BorderLayout.SOUTH);
+
+        // Ajustes de dimensiones y centrado
+        this.setSize(440, 250);
         this.setResizable(false);
         this.setLocationRelativeTo(null);
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         this.setVisible(true);
     }
 
-    public String recuperarInformacion() {
-        Client cliente=new Client();
-        HashMap<String,Object> session=new HashMap<>();
-        String context="/getCustomer";
-        session.put("id",id);
-        session=cliente.sentMessage(context,session);
-        Customer cu=(Customer)session.get("Customer");
-        String nombre;
-        if (cu==null) {
-            nombre="Error - No encontrado en la base de datos";
-        }else {
-            nombre=cu.getName();
-        }
-        return nombre;
+    public Customer login(String nombre) {
+        Client cliente = new Client();
+        HashMap<String, Object> session = new HashMap<>();
+        session.put("nombre", nombre);
+
+        session = cliente.sentMessage("/login", session);
+        return (Customer) session.get("Customer");
     }
 }
