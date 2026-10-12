@@ -16,127 +16,130 @@ import icai.dtc.isw.domain.Customer;
 import icai.dtc.isw.message.Message;
 
 public class SocketServer extends Thread {
-	public static int port = Integer.parseInt(PropertiesISW.getInstance().getProperty("port"));
+    public static int port = Integer.parseInt(PropertiesISW.getInstance().getProperty("port"));
 
-	protected Socket socket;
+    protected Socket socket;
 
-	private SocketServer(Socket socket) {
-		this.socket = socket;
-		//Configure connections
-		System.out.println("New client connected from " + socket.getInetAddress().getHostAddress());
-		start();
-	}
+    private SocketServer(Socket socket) {
+        this.socket = socket;
+        System.out.println("New client connected from " + socket.getInetAddress().getHostAddress());
+        start();
+    }
 
-	public void run() {
-		InputStream in = null;
-		OutputStream out = null;
-		try {
-			in = socket.getInputStream();
-			out = socket.getOutputStream();
-			
-			//first read the object that has been sent
-			ObjectInputStream objectInputStream = new ObjectInputStream(in);
-		    Message mensajeIn= (Message)objectInputStream.readObject();
-		    //Object to return informations 
-		    ObjectOutputStream objectOutputStream = new ObjectOutputStream(out);
-		    Message mensajeOut=new Message();
-			HashMap<String,Object> session=mensajeIn.getSession();
-			CustomerControler customerControler;
-		    switch (mensajeIn.getContext()) {
-		    	case "/getCustomers":
-		    		customerControler=new CustomerControler();
-		    		ArrayList<Customer> lista=new ArrayList<Customer>();
-		    		customerControler.getCustomers(lista);
-		    		mensajeOut.setContext("/getCustomersResponse");
-		    		//HashMap<String,Object> session=new HashMap<String, Object>();
-		    		session.put("Customer",lista);
-		    		mensajeOut.setSession(session);
-		    		objectOutputStream.writeObject(mensajeOut);		    		
-		    		break;
-				case "/getCustomer":
-					int id= (int) session.get("id");
-					customerControler=new CustomerControler();
-					Customer cu=customerControler.getCustomer(id);
-					if (cu!=null){
-						System.out.println("id:"+cu.getId());
-					}else {
-						System.out.println("No encontrado en la base de datos");
-					}
+    public void run() {
+        InputStream in = null;
+        OutputStream out = null;
+        try {
+            in = socket.getInputStream();
+            out = socket.getOutputStream();
 
-					mensajeOut.setContext("/getCustomerResponse");
-					session.put("Customer",cu);
-					mensajeOut.setSession(session);
-					objectOutputStream.writeObject(mensajeOut);
-					break;
-		    	
-		    	default:
-		    		System.out.println("\nParámetro no encontrado");
-		    		break;
-		    }
-		    
-		    //Lógica del controlador 
-		    //System.out.println("\n1.- He leído: "+mensaje.getContext());
-		    //System.out.println("\n2.- He leído: "+(String)mensaje.getSession().get("Nombre"));
-		    
-		    
-		    
-		    //Prueba para esperar
-		    /*try {
-		    	System.out.println("Me duermo");
-				Thread.sleep(15000);
-				System.out.println("Me levanto");
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}*/
-			// create an object output stream from the output stream so we can send an object through it
-			/*ObjectOutputStream objectOutputStream = new ObjectOutputStream(out);
-			
-			//Create the object to send
-			String cadena=((String)mensaje.getSession().get("Nombre"));
-			cadena+=" añado información";
-			mensaje.getSession().put("Nombre", cadena);
-			//System.out.println("\n3.- He leído: "+(String)mensaje.getSession().get("Nombre"));
-			objectOutputStream.writeObject(mensaje);*
-			*/
+            ObjectInputStream objectInputStream = new ObjectInputStream(in);
+            Message mensajeIn = (Message) objectInputStream.readObject();
 
-		} catch (IOException ex) {
-			System.out.println("Unable to get streams from client");
-		} catch (ClassNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} finally {
-			try {
-				in.close();
-				out.close();
-				socket.close();
-			} catch (IOException ex) {
-				ex.printStackTrace();
-			}
-		}
-	}
+            ObjectOutputStream objectOutputStream = new ObjectOutputStream(out);
+            Message mensajeOut = new Message();
+            HashMap<String, Object> session = mensajeIn.getSession();
+            CustomerControler customerControler;
 
-	public static void main(String[] args) {
-		System.out.println("SocketServer Example - Listening port "+port);
-		ServerSocket server = null;
-		try {
-			server = new ServerSocket(port);
-			while (true) {
-				/**
-				 * create a new {@link SocketServer} object for each connection
-				 * this will allow multiple client connections
-				 */
-				new SocketServer(server.accept());
-			}
-		} catch (IOException ex) {
-			System.out.println("Unable to start server.");
-		} finally {
-			try {
-				if (server != null)
-					server.close();
-			} catch (IOException ex) {
-				ex.printStackTrace();
-			}
-		}
-	}
+            switch (mensajeIn.getContext()) {
+                case "/getCustomers":
+                    customerControler = new CustomerControler();
+                    ArrayList<Customer> lista = new ArrayList<Customer>();
+                    customerControler.getCustomers(lista);
+                    mensajeOut.setContext("/getCustomersResponse");
+                    session.put("Customer", lista);
+                    mensajeOut.setSession(session);
+                    objectOutputStream.writeObject(mensajeOut);
+                    break;
+
+                case "/getCustomer":
+                    int id = (int) session.get("id");
+                    customerControler = new CustomerControler();
+                    Customer cu = customerControler.getCustomer(id);
+                    if (cu != null) {
+                        System.out.println("id:" + cu.getId());
+                    } else {
+                        System.out.println("No encontrado en la base de datos");
+                    }
+
+                    mensajeOut.setContext("/getCustomerResponse");
+                    session.put("Customer", cu);
+                    mensajeOut.setSession(session);
+                    objectOutputStream.writeObject(mensajeOut);
+                    break;
+
+                case "/login":
+                    String nombreLogin = (String) session.get("nombre");
+                    customerControler = new CustomerControler();
+                    Customer cuLogin = customerControler.getCustomerByName(nombreLogin);
+
+                    mensajeOut.setContext("/loginResponse");
+                    session.put("Customer", cuLogin);
+                    mensajeOut.setSession(session);
+                    objectOutputStream.writeObject(mensajeOut);
+                    break;
+
+                case "/aparcar":
+                    int idAparcar = (int) session.get("idUsuario");
+                    double lat = (double) session.get("latitud");
+                    double lon = (double) session.get("longitud");
+                    customerControler = new CustomerControler();
+                    boolean okAparcar = customerControler.aparcar(idAparcar, lat, lon);
+
+                    mensajeOut.setContext("/aparcarResponse");
+                    session.put("exito", okAparcar);
+                    mensajeOut.setSession(session);
+                    objectOutputStream.writeObject(mensajeOut);
+                    break;
+
+                case "/desaparcar":
+                    int idDesaparcar = (int) session.get("idUsuario");
+                    customerControler = new CustomerControler();
+                    boolean okDesaparcar = customerControler.desaparcar(idDesaparcar);
+
+                    mensajeOut.setContext("/desaparcarResponse");
+                    session.put("exito", okDesaparcar);
+                    mensajeOut.setSession(session);
+                    objectOutputStream.writeObject(mensajeOut);
+                    break;
+
+                default:
+                    System.out.println("\nParámetro no encontrado");
+                    break;
+            }
+
+        } catch (IOException ex) {
+            System.out.println("Unable to get streams from client");
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                if (in != null) in.close();
+                if (out != null) out.close();
+                if (socket != null) socket.close();
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+        }
+    }
+
+    public static void main(String[] args) {
+        System.out.println("SocketServer Example - Listening port " + port);
+        ServerSocket server = null;
+        try {
+            server = new ServerSocket(port);
+            while (true) {
+                new SocketServer(server.accept());
+            }
+        } catch (IOException ex) {
+            System.out.println("Unable to start server.");
+        } finally {
+            try {
+                if (server != null)
+                    server.close();
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+        }
+    }
 }
