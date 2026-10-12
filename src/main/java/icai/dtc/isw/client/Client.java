@@ -66,6 +66,10 @@ public class Client {
 			case "/loginResponse":
 				session=mensajeVuelta.getSession();
 				break;
+			case "/aparcarResponse":
+			case "/desaparcarResponse":
+				session=mensajeVuelta.getSession();
+				break;
 			default:
 
 				System.out.println("\nError a la vuelta");

@@ -1,21 +1,25 @@
 package icai.dtc.isw.ui;
 
+import icai.dtc.isw.client.Client;
+import icai.dtc.isw.domain.Customer;
+
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.TitledBorder;
 import java.awt.*;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
 
 public class JVentana extends JFrame {
 
     private CardLayout cardLayout;
     private JPanel pnlContenedorPrincipal;
 
-    // Panel Login
+    // Componentes Login
     private JTextField txtUsuario;
 
-    // Panel Aparcamiento
+    // Componentes Aparcar
     private JLabel lblSaludo;
     private JTextField txtLatitud;
     private JTextField txtLongitud;
@@ -23,8 +27,8 @@ public class JVentana extends JFrame {
     private JLabel lblEstadoTexto;
     private JButton btnDesaparcar;
 
-    // Variables de estado local (sin BD por ahora)
-    private String nombreUsuarioActual;
+    // Usuario activo en la sesión
+    private Customer usuarioActual;
     private boolean estaAparcado = false;
     private String horaAparcado = "";
 
@@ -38,7 +42,6 @@ public class JVentana extends JFrame {
         cardLayout = new CardLayout();
         pnlContenedorPrincipal = new JPanel(cardLayout);
 
-        // Añadimos los dos paneles
         pnlContenedorPrincipal.add(crearPanelLogin(), "PANTALLA_LOGIN");
         pnlContenedorPrincipal.add(crearPanelAparcar(), "PANTALLA_APARCAR");
 
@@ -53,26 +56,35 @@ public class JVentana extends JFrame {
     }
 
     private JPanel crearPanelLogin() {
-        JPanel pnl = new JPanel(new BorderLayout(15, 15));
-        pnl.setBorder(new EmptyBorder(60, 40, 60, 40));
+        JPanel pnl = new JPanel();
+        pnl.setLayout(new BoxLayout(pnl, BoxLayout.Y_AXIS));
+        pnl.setBorder(new EmptyBorder(50, 60, 50, 60));
 
-        JLabel lblTitulo = new JLabel("ParkNow", SwingConstants.CENTER);
-        lblTitulo.setFont(new Font("Arial", Font.BOLD, 24));
-        pnl.add(lblTitulo, BorderLayout.NORTH);
+        JLabel lblTitulo = new JLabel("ParkNow");
+        lblTitulo.setFont(new Font("Arial", Font.BOLD, 26));
+        lblTitulo.setAlignmentX(Component.CENTER_ALIGNMENT);
+        pnl.add(lblTitulo);
+        pnl.add(Box.createRigidArea(new Dimension(0, 40)));
 
-        JPanel pnlCentro = new JPanel(new GridLayout(2, 1, 8, 8));
         JLabel lblSub = new JLabel("Iniciar sesión");
         lblSub.setFont(new Font("Arial", Font.PLAIN, 15));
+        lblSub.setAlignmentX(Component.CENTER_ALIGNMENT);
+        pnl.add(lblSub);
+        pnl.add(Box.createRigidArea(new Dimension(0, 10)));
+
         txtUsuario = new JTextField();
         txtUsuario.setFont(new Font("Arial", Font.PLAIN, 14));
-        pnlCentro.add(lblSub);
-        pnlCentro.add(txtUsuario);
-        pnl.add(pnlCentro, BorderLayout.CENTER);
+        txtUsuario.setMaximumSize(new Dimension(300, 35));
+        txtUsuario.setPreferredSize(new Dimension(300, 35));
+        txtUsuario.setAlignmentX(Component.CENTER_ALIGNMENT);
+        pnl.add(txtUsuario);
+        pnl.add(Box.createRigidArea(new Dimension(0, 25)));
 
-        JPanel pnlSur = new JPanel();
         JButton btnEntrar = new JButton("Entrar");
         btnEntrar.setFont(new Font("Arial", Font.BOLD, 14));
+        btnEntrar.setMaximumSize(new Dimension(130, 36));
         btnEntrar.setPreferredSize(new Dimension(130, 36));
+        btnEntrar.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         btnEntrar.addActionListener(e -> {
             String nombre = txtUsuario.getText().trim();
@@ -81,14 +93,26 @@ public class JVentana extends JFrame {
                 return;
             }
 
-            nombreUsuarioActual = nombre;
-            lblSaludo.setText("Hola, " + nombreUsuarioActual);
-            cardLayout.show(pnlContenedorPrincipal, "PANTALLA_APARCAR");
+            try {
+                Client cliente = new Client();
+                HashMap<String, Object> session = new HashMap<>();
+                session.put("nombre", nombre);
+                session = cliente.sentMessage("/login", session);
+
+                usuarioActual = (Customer) session.get("Customer");
+
+                if (usuarioActual != null) {
+                    lblSaludo.setText("Hola, " + usuarioActual.getName());
+                    cardLayout.show(pnlContenedorPrincipal, "PANTALLA_APARCAR");
+                } else {
+                    JOptionPane.showMessageDialog(this, "Usuario no encontrado en la base de datos.");
+                }
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, "Error de conexión con el servidor.");
+            }
         });
 
-        pnlSur.add(btnEntrar);
-        pnl.add(pnlSur, BorderLayout.SOUTH);
-
+        pnl.add(btnEntrar);
         return pnl;
     }
 
@@ -121,11 +145,33 @@ public class JVentana extends JFrame {
 
         btnAparcar = new JButton("🅿 He aparcado aquí");
         btnAparcar.setFont(new Font("Arial", Font.BOLD, 13));
+
         btnAparcar.addActionListener(e -> {
-            horaAparcado = LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm"));
-            estaAparcado = true;
-            actualizarEstadoVisual();
-            JOptionPane.showMessageDialog(this, "¡Coche registrado como aparcado!");
+            try {
+                double lat = Double.parseDouble(txtLatitud.getText().trim());
+                double lon = Double.parseDouble(txtLongitud.getText().trim());
+                int idUser = Integer.parseInt(usuarioActual.getId());
+
+                Client cliente = new Client();
+                HashMap<String, Object> session = new HashMap<>();
+                session.put("idUsuario", idUser);
+                session.put("latitud", lat);
+                session.put("longitud", lon);
+
+                session = cliente.sentMessage("/aparcar", session);
+                boolean exito = (boolean) session.get("exito");
+
+                if (exito) {
+                    horaAparcado = LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm"));
+                    estaAparcado = true;
+                    actualizarEstadoVisual();
+                    JOptionPane.showMessageDialog(this, "Aparcado correctamente.");
+                } else {
+                    JOptionPane.showMessageDialog(this, "Error al registrar aparcamiento en la base de datos.");
+                }
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(this, "Introduce coordenadas numéricas válidas.");
+            }
         });
 
         pnlRegistrar.add(pnlCoords, BorderLayout.CENTER);
@@ -145,11 +191,25 @@ public class JVentana extends JFrame {
         btnDesaparcar = new JButton("🚗 Ya me he marchado");
         btnDesaparcar.setFont(new Font("Arial", Font.BOLD, 13));
         btnDesaparcar.setEnabled(false);
+
         btnDesaparcar.addActionListener(e -> {
-            estaAparcado = false;
-            horaAparcado = "";
-            actualizarEstadoVisual();
-            JOptionPane.showMessageDialog(this, "Has retirado el coche.");
+            int idUser = Integer.parseInt(usuarioActual.getId());
+
+            Client cliente = new Client();
+            HashMap<String, Object> session = new HashMap<>();
+            session.put("idUsuario", idUser);
+
+            session = cliente.sentMessage("/desaparcar", session);
+            boolean exito = (boolean) session.get("exito");
+
+            if (exito) {
+                estaAparcado = false;
+                horaAparcado = "";
+                actualizarEstadoVisual();
+                JOptionPane.showMessageDialog(this, "Has retirado el coche. Plaza liberada.");
+            } else {
+                JOptionPane.showMessageDialog(this, "Error al eliminar el registro.");
+            }
         });
 
         pnlEstado.add(lblEstadoTexto, BorderLayout.CENTER);

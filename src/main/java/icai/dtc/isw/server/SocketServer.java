@@ -22,7 +22,6 @@ public class SocketServer extends Thread {
 
     private SocketServer(Socket socket) {
         this.socket = socket;
-        // Configure connections
         System.out.println("New client connected from " + socket.getInetAddress().getHostAddress());
         start();
     }
@@ -33,12 +32,10 @@ public class SocketServer extends Thread {
         try {
             in = socket.getInputStream();
             out = socket.getOutputStream();
-            
-            // First read the object that has been sent
+
             ObjectInputStream objectInputStream = new ObjectInputStream(in);
             Message mensajeIn = (Message) objectInputStream.readObject();
-            
-            // Object to return information 
+
             ObjectOutputStream objectOutputStream = new ObjectOutputStream(out);
             Message mensajeOut = new Message();
             HashMap<String, Object> session = mensajeIn.getSession();
@@ -52,7 +49,7 @@ public class SocketServer extends Thread {
                     mensajeOut.setContext("/getCustomersResponse");
                     session.put("Customer", lista);
                     mensajeOut.setSession(session);
-                    objectOutputStream.writeObject(mensajeOut);                 
+                    objectOutputStream.writeObject(mensajeOut);
                     break;
 
                 case "/getCustomer":
@@ -72,23 +69,40 @@ public class SocketServer extends Thread {
                     break;
 
                 case "/login":
-                    // Nuevo caso para iniciar sesión por nombre
-                    String nombre = (String) session.get("nombre");
+                    String nombreLogin = (String) session.get("nombre");
                     customerControler = new CustomerControler();
-                    Customer cuLogin = customerControler.getCustomerByName(nombre);
-                    
-                    if (cuLogin != null) {
-                        System.out.println("Login correcto - Usuario: " + cuLogin.getName());
-                    } else {
-                        System.out.println("Login fallido - Usuario no encontrado: " + nombre);
-                    }
+                    Customer cuLogin = customerControler.getCustomerByName(nombreLogin);
 
                     mensajeOut.setContext("/loginResponse");
                     session.put("Customer", cuLogin);
                     mensajeOut.setSession(session);
                     objectOutputStream.writeObject(mensajeOut);
                     break;
-                
+
+                case "/aparcar":
+                    int idAparcar = (int) session.get("idUsuario");
+                    double lat = (double) session.get("latitud");
+                    double lon = (double) session.get("longitud");
+                    customerControler = new CustomerControler();
+                    boolean okAparcar = customerControler.aparcar(idAparcar, lat, lon);
+
+                    mensajeOut.setContext("/aparcarResponse");
+                    session.put("exito", okAparcar);
+                    mensajeOut.setSession(session);
+                    objectOutputStream.writeObject(mensajeOut);
+                    break;
+
+                case "/desaparcar":
+                    int idDesaparcar = (int) session.get("idUsuario");
+                    customerControler = new CustomerControler();
+                    boolean okDesaparcar = customerControler.desaparcar(idDesaparcar);
+
+                    mensajeOut.setContext("/desaparcarResponse");
+                    session.put("exito", okDesaparcar);
+                    mensajeOut.setSession(session);
+                    objectOutputStream.writeObject(mensajeOut);
+                    break;
+
                 default:
                     System.out.println("\nParámetro no encontrado");
                     break;
