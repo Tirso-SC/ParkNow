@@ -47,6 +47,25 @@ public class CustomerDAO {
 		return cu;
 		//return new Customer("1","Atilano");
 	}
+
+	public Customer getClientePorNombre(String nombre) {
+		Connection con=ConnectionDAO.getInstance().getConnection();
+		Customer cu=null;
+		String consulta = "SELECT id, nombre FROM public.usuarios WHERE nombre = ?";
+
+		try (PreparedStatement pst = con.prepareStatement(consulta)) {
+			pst.setString(1, nombre);
+
+			try (ResultSet rs = pst.executeQuery()) {
+				if (rs.next()) {
+					cu = new Customer(rs.getString("id"), rs.getString("nombre"));
+				}
+			}
+		} catch (SQLException ex) {
+			throw new IllegalStateException("No se pudo recuperar el usuario con nombre " + nombre, ex);
+		}
+		return cu;
+	}
 	
 	public static void main(String[] args) {
 		
