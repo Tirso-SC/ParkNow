@@ -89,10 +89,11 @@ public class CustomerDAO {
         }
     }
 
-    // Eliminar el aparcamiento al marcharse para dejar la plaza libre
+    // Poner la hora de salida al marcharse
     public boolean desaparcarCoche(int idUsuario) {
         Connection con = ConnectionDAO.getInstance().getConnection();
-        String sql = "DELETE FROM public.aparcamientos WHERE id_usuario = ?";
+        String sql = "UPDATE public.aparcamientos SET hora_fin = CURRENT_TIMESTAMP " +
+                "WHERE id_usuario = ? AND hora_fin IS NULL";
         try (PreparedStatement pst = con.prepareStatement(sql)) {
             pst.setInt(1, idUsuario);
             return pst.executeUpdate() > 0;
@@ -104,16 +105,22 @@ public class CustomerDAO {
 
     public String getAparcamientos() {
         Connection con = ConnectionDAO.getInstance().getConnection();
-        String sql = "SELECT latitud, longitud, hora_inicio FROM public.aparcamientos " +
-                "WHERE hora_fin IS NULL ORDER BY hora_inicio DESC";
+        String sql = "SELECT latitud, longitud, hora_inicio, hora_fin " +
+                "FROM public.aparcamientos ORDER BY hora_inicio DESC";
         String texto = "";
 
         try (PreparedStatement pst = con.prepareStatement(sql);
              ResultSet rs = pst.executeQuery()) {
             while (rs.next()) {
-                texto += "Coche aparcado en (" + rs.getDouble("latitud") + ", "
-                        + rs.getDouble("longitud") + ") desde "
-                        + rs.getTimestamp("hora_inicio") + "\n";
+                if (rs.getTimestamp("hora_fin") == null) {
+                    texto += "Coche aparcado en (" + rs.getDouble("latitud") + ", "
+                            + rs.getDouble("longitud") + ") desde "
+                            + rs.getTimestamp("hora_inicio") + "\n";
+                } else {
+                    texto += "Aparcamiento libre en (" + rs.getDouble("latitud") + ", "
+                            + rs.getDouble("longitud") + ") desde "
+                            + rs.getTimestamp("hora_fin") + "\n";
+                }
             }
         } catch (SQLException ex) {
             ex.printStackTrace();
