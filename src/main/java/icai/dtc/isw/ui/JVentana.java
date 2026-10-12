@@ -223,15 +223,17 @@ public class JVentana extends JFrame {
                 BorderFactory.createEtchedBorder(), "Consultar aparcamientos",
                 TitledBorder.LEFT, TitledBorder.TOP, new Font("Arial", Font.BOLD, 13)));
 
-        JLabel lblSubConsulta = new JLabel("Lista de registros recientes y su estado.");
-        lblSubConsulta.setFont(new Font("Arial", Font.ITALIC, 12));
-        lblSubConsulta.setForeground(Color.DARK_GRAY);
-
         JButton btnFlecha = new JButton("⬇");
         btnFlecha.setPreferredSize(new Dimension(50, 30));
-        btnFlecha.addActionListener(e -> JOptionPane.showMessageDialog(this, "Listado en desarrollo."));
+        JTextArea txtAparcamientos = new JTextArea(4, 30);
+        txtAparcamientos.setEditable(false);
+        btnFlecha.addActionListener(e -> {
+            Client cliente = new Client();
+            HashMap<String, Object> session = cliente.sentMessage("/getAparcamientos", new HashMap<>());
+            txtAparcamientos.setText((String) session.get("aparcamientos"));
+        });
 
-        pnlConsultar.add(lblSubConsulta, BorderLayout.CENTER);
+        pnlConsultar.add(new JScrollPane(txtAparcamientos), BorderLayout.CENTER);
         pnlConsultar.add(btnFlecha, BorderLayout.EAST);
         pnl.add(pnlConsultar);
 

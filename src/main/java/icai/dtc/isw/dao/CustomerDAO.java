@@ -102,6 +102,25 @@ public class CustomerDAO {
         }
     }
 
+    public String getAparcamientos() {
+        Connection con = ConnectionDAO.getInstance().getConnection();
+        String sql = "SELECT latitud, longitud, hora_inicio FROM public.aparcamientos " +
+                "WHERE hora_fin IS NULL ORDER BY hora_inicio DESC";
+        String texto = "";
+
+        try (PreparedStatement pst = con.prepareStatement(sql);
+             ResultSet rs = pst.executeQuery()) {
+            while (rs.next()) {
+                texto += "Coche aparcado en (" + rs.getDouble("latitud") + ", "
+                        + rs.getDouble("longitud") + ") desde "
+                        + rs.getTimestamp("hora_inicio") + "\n";
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+        return texto;
+    }
+
     public static void main(String[] args) {
         CustomerDAO customerDAO = new CustomerDAO();
         ArrayList<Customer> lista = new ArrayList<>();

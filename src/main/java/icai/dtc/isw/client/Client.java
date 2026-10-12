@@ -70,6 +70,9 @@ public class Client {
 			case "/desaparcarResponse":
 				session=mensajeVuelta.getSession();
 				break;
+			case "/getAparcamientosResponse":
+				session=mensajeVuelta.getSession();
+				break;
 			default:
 
 				System.out.println("\nError a la vuelta");
