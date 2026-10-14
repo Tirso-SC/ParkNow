@@ -4,7 +4,7 @@
 <comment>This is easy!</comment>
 	<entry key="ddbb.connection">jdbc:postgresql://ec2-13-51-194-105.eu-north-1.compute.amazonaws.com:5432/production</entry>
 	<entry key="ddbb.user">postgres</entry>
-	<entry key="ddbb.password">postgres</entry>
+	<entry key="ddbb.password">IngSoftGrupo_2</entry>
 	<entry key="host">127.0.0.1</entry>	
 	<entry key="port">8081</entry>		
 </properties>
