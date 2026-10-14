@@ -27,4 +27,8 @@ public class CustomerControler {
     public boolean desaparcar(int idUsuario) {
         return customerDAO.desaparcarCoche(idUsuario);
     }
+
+    public String getAparcamientos() {
+        return customerDAO.getAparcamientos();
+    }
 }

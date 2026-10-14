@@ -103,6 +103,15 @@ public class SocketServer extends Thread {
                     objectOutputStream.writeObject(mensajeOut);
                     break;
 
+                case "/getAparcamientos":
+                    customerControler = new CustomerControler();
+                    String aparcamientos = customerControler.getAparcamientos();
+                    mensajeOut.setContext("/getAparcamientosResponse");
+                    session.put("aparcamientos", aparcamientos);
+                    mensajeOut.setSession(session);
+                    objectOutputStream.writeObject(mensajeOut);
+                    break;
+
                 default:
                     System.out.println("\nParámetro no encontrado");
                     break;

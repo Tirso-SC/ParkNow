@@ -4,35 +4,43 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-public class CustomerTest {
+class CustomerTest {
 
     private Customer customer;
 
     @BeforeEach
-    public void setUp() {
-        customer = new Customer("1", "Beltran");
+    void setUp() {
+        customer = new Customer("1", "Cristiano Ronaldo");
     }
 
     @Test
-    public void testGetId() {
+    void testConstructorVacio() {
+        Customer c = new Customer();
+        assertNotNull(c.getId());
+        assertNotNull(c.getName());
+    }
+
+    @Test
+    void testGetId() {
         assertEquals("1", customer.getId());
     }
 
     @Test
-    public void testSetId() {
+    void testSetId() {
         customer.setId("2");
         assertEquals("2", customer.getId());
     }
 
     @Test
-    public void testGetName() {
-        assertEquals("Beltran", customer.getName());
+    void testGetName() {
+        assertEquals("Cristiano Ronaldo", customer.getName());
     }
 
     @Test
-    public void testSetLastName() {
-        customer.setName("Smith");
-        assertEquals("Smith", customer.getName());
+    void testSetName() {
+        customer.setName("Lionel Messi");
+        assertEquals("Lionel Messi", customer.getName());
     }
 }
