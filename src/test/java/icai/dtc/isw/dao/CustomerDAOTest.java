@@ -1,48 +1,52 @@
 package icai.dtc.isw.dao;
 
 import icai.dtc.isw.domain.Customer;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
-public class CustomerDAOTest {
+import java.util.ArrayList;
 
-    @Mock
-    private CustomerDAO customerDAO;  // Simulación de CustomerDAO
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-    @InjectMocks
-    private CustomerDAOTest customerDAOTest; // Inyectar mocks en esta clase
+class CustomerDAOTest {
 
+    private static CustomerDAO customerDAO;
 
-    @BeforeEach
-    public void setUp() {
-        // Inicializar los mocks
-        MockitoAnnotations.openMocks(this);
-        // Inicializar manualmente el customerDAO
-        customerDAO = mock(CustomerDAO.class);
+    @BeforeAll
+    static void setUp() {
+        customerDAO = new CustomerDAO();
     }
 
     @Test
-    public void testGetCustomerById() {
-        // Crear un objeto de cliente simulado
-        Customer expectedCustomer = new Customer("123", "Atilano");
+    void testGetClientes() {
+        ArrayList<Customer> lista = new ArrayList<>();
+        customerDAO.getClientes(lista);
+        assertNotNull(lista);
+    }
 
-        // Simular el comportamiento del método getCliente
-        when(customerDAO.getCliente(123)).thenReturn(expectedCustomer);
+    @Test
+    void testGetClientePorNombre() {
+        Customer c = customerDAO.getClientePorNombre("Jude Bellingham");
+        assertNotNull(c);
+        assertNotNull(c.getId());
+    }
 
-        // Llamar al método
-        Customer actualCustomer = customerDAO.getCliente(123);
+    @Test
+    void testAparcarYDesaparcarCoche() {
+        Customer c = customerDAO.getClientePorNombre("Jude Bellingham");
+        int id = Integer.parseInt(c.getId());
 
-        // Verificar que el resultado es correcto
-        assertNotNull(actualCustomer);
-        assertEquals("123", actualCustomer.getId());
-        assertEquals("Atilano", actualCustomer.getName());
+        boolean aparcado = customerDAO.aparcarCoche(id, 40.4168, -3.7038);
+        assertTrue(aparcado);
 
-        // Verificar que el método getCliente fue llamado
-        verify(customerDAO, times(1)).getCliente(123);
+        boolean desaparcado = customerDAO.desaparcarCoche(id);
+        assertTrue(desaparcado);
+    }
+
+    @Test
+    void testGetAparcamientos() {
+        String aparcamientos = customerDAO.getAparcamientos();
+        assertNotNull(aparcamientos);
     }
 }
