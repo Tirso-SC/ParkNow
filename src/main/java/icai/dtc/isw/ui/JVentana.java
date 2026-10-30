@@ -100,6 +100,10 @@ public class JVentana extends JFrame {
                 JOptionPane.showMessageDialog(this, "Por favor, escribe tu correo y tu contraseña.");
                 return;
             }
+            if (!email.contains("@") || !email.contains(".")) {
+                JOptionPane.showMessageDialog(this, "Introduce un correo válido.");
+                return;
+            }
 
             try {
                 Client cliente = new Client();
