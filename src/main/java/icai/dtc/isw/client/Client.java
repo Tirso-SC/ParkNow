@@ -64,6 +64,7 @@ public class Client {
 				}
 				break;
 			case "/loginResponse":
+			case "/registroResponse":
 				session=mensajeVuelta.getSession();
 				break;
 			case "/aparcarResponse":

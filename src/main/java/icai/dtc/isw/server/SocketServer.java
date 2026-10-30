@@ -69,12 +69,29 @@ public class SocketServer extends Thread {
                     break;
 
                 case "/login":
-                    String nombreLogin = (String) session.get("nombre");
+                    String emailLogin = (String) session.get("email");
+                    String passwordLogin = (String) session.get("password");
                     customerControler = new CustomerControler();
-                    Customer cuLogin = customerControler.getCustomerByName(nombreLogin);
+                    Customer cuLogin = customerControler.login(emailLogin, passwordLogin);
 
                     mensajeOut.setContext("/loginResponse");
+                    session.remove("password"); // la contraseña no vuelve al cliente
                     session.put("Customer", cuLogin);
+                    mensajeOut.setSession(session);
+                    objectOutputStream.writeObject(mensajeOut);
+                    break;
+
+                case "/registro":
+                    String nombreRegistro = (String) session.get("nombre");
+                    String emailRegistro = (String) session.get("email");
+                    String passwordRegistro = (String) session.get("password");
+                    customerControler = new CustomerControler();
+                    String error = customerControler.registrar(nombreRegistro, emailRegistro, passwordRegistro);
+
+                    mensajeOut.setContext("/registroResponse");
+                    session.remove("password"); // la contraseña no vuelve al cliente
+                    session.put("exito", error == null);
+                    session.put("error", error);
                     mensajeOut.setSession(session);
                     objectOutputStream.writeObject(mensajeOut);
                     break;
