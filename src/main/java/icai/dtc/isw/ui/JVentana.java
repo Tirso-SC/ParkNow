@@ -17,7 +17,14 @@ public class JVentana extends JFrame {
     private JPanel pnlContenedorPrincipal;
 
     // Componentes Login
-    private JTextField txtUsuario;
+    private JTextField txtCorreo;
+    private JPasswordField txtPassword;
+
+    // Componentes Registro
+    private JTextField txtRegNombre;
+    private JTextField txtRegCorreo;
+    private JPasswordField txtRegPassword;
+    private JPasswordField txtRegPassword2;
 
     // Componentes Aparcar
     private JLabel lblSaludo;
@@ -43,10 +50,11 @@ public class JVentana extends JFrame {
         pnlContenedorPrincipal = new JPanel(cardLayout);
 
         pnlContenedorPrincipal.add(crearPanelLogin(), "PANTALLA_LOGIN");
+        pnlContenedorPrincipal.add(crearPanelRegistro(), "PANTALLA_REGISTRO");
         pnlContenedorPrincipal.add(crearPanelAparcar(), "PANTALLA_APARCAR");
 
         this.setContentPane(pnlContenedorPrincipal);
-        this.setSize(480, 480);
+        this.setSize(480, 580);
         this.setResizable(false);
         this.setLocationRelativeTo(null);
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -72,13 +80,12 @@ public class JVentana extends JFrame {
         pnl.add(lblSub);
         pnl.add(Box.createRigidArea(new Dimension(0, 10)));
 
-        txtUsuario = new JTextField();
-        txtUsuario.setFont(new Font("Arial", Font.PLAIN, 14));
-        txtUsuario.setMaximumSize(new Dimension(300, 35));
-        txtUsuario.setPreferredSize(new Dimension(300, 35));
-        txtUsuario.setAlignmentX(Component.CENTER_ALIGNMENT);
-        pnl.add(txtUsuario);
-        pnl.add(Box.createRigidArea(new Dimension(0, 25)));
+        txtCorreo = new JTextField();
+        anadirCampo(pnl, "Correo", txtCorreo);
+
+        txtPassword = new JPasswordField();
+        anadirCampo(pnl, "Contraseña", txtPassword);
+        pnl.add(Box.createRigidArea(new Dimension(0, 15)));
 
         JButton btnEntrar = new JButton("Entrar");
         btnEntrar.setFont(new Font("Arial", Font.BOLD, 14));
@@ -87,25 +94,32 @@ public class JVentana extends JFrame {
         btnEntrar.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         btnEntrar.addActionListener(e -> {
-            String nombre = txtUsuario.getText().trim();
-            if (nombre.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Por favor, escribe un nombre de usuario.");
+            String email = txtCorreo.getText().trim();
+            String password = new String(txtPassword.getPassword());
+            if (email.isEmpty() || password.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Por favor, escribe tu correo y tu contraseña.");
+                return;
+            }
+            if (!email.contains("@") || !email.contains(".")) {
+                JOptionPane.showMessageDialog(this, "Introduce un correo válido.");
                 return;
             }
 
             try {
                 Client cliente = new Client();
                 HashMap<String, Object> session = new HashMap<>();
-                session.put("nombre", nombre);
+                session.put("email", email);
+                session.put("password", password);
                 session = cliente.sentMessage("/login", session);
 
                 usuarioActual = (Customer) session.get("Customer");
 
                 if (usuarioActual != null) {
+                    txtPassword.setText("");
                     lblSaludo.setText("Hola, " + usuarioActual.getName());
                     cardLayout.show(pnlContenedorPrincipal, "PANTALLA_APARCAR");
                 } else {
-                    JOptionPane.showMessageDialog(this, "Usuario no encontrado en la base de datos.");
+                    JOptionPane.showMessageDialog(this, "Correo o contraseña incorrectos");
                 }
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(this, "Error de conexión con el servidor.");
@@ -113,7 +127,125 @@ public class JVentana extends JFrame {
         });
 
         pnl.add(btnEntrar);
+        pnl.add(Box.createRigidArea(new Dimension(0, 10)));
+
+        // Botón para ir a la pantalla de registro
+        JButton btnIrRegistro = new JButton("¿No tienes cuenta? Regístrate");
+        btnIrRegistro.setFont(new Font("Arial", Font.PLAIN, 13));
+        btnIrRegistro.setAlignmentX(Component.CENTER_ALIGNMENT);
+        btnIrRegistro.addActionListener(e -> cardLayout.show(pnlContenedorPrincipal, "PANTALLA_REGISTRO"));
+        pnl.add(btnIrRegistro);
+
         return pnl;
+    }
+
+    private JPanel crearPanelRegistro() {
+        JPanel pnl = new JPanel();
+        pnl.setLayout(new BoxLayout(pnl, BoxLayout.Y_AXIS));
+        pnl.setBorder(new EmptyBorder(25, 60, 25, 60));
+
+        JLabel lblTitulo = new JLabel("ParkNow");
+        lblTitulo.setFont(new Font("Arial", Font.BOLD, 26));
+        lblTitulo.setAlignmentX(Component.CENTER_ALIGNMENT);
+        pnl.add(lblTitulo);
+        pnl.add(Box.createRigidArea(new Dimension(0, 15)));
+
+        JLabel lblSub = new JLabel("Crear cuenta");
+        lblSub.setFont(new Font("Arial", Font.PLAIN, 15));
+        lblSub.setAlignmentX(Component.CENTER_ALIGNMENT);
+        pnl.add(lblSub);
+        pnl.add(Box.createRigidArea(new Dimension(0, 10)));
+
+        txtRegNombre = new JTextField();
+        anadirCampo(pnl, "Nombre", txtRegNombre);
+
+        txtRegCorreo = new JTextField();
+        anadirCampo(pnl, "Correo", txtRegCorreo);
+
+        txtRegPassword = new JPasswordField();
+        anadirCampo(pnl, "Contraseña (mínimo 8 caracteres)", txtRegPassword);
+
+        txtRegPassword2 = new JPasswordField();
+        anadirCampo(pnl, "Repetir contraseña", txtRegPassword2);
+        pnl.add(Box.createRigidArea(new Dimension(0, 5)));
+
+        JButton btnRegistrarme = new JButton("Registrarme");
+        btnRegistrarme.setFont(new Font("Arial", Font.BOLD, 14));
+        btnRegistrarme.setMaximumSize(new Dimension(150, 36));
+        btnRegistrarme.setPreferredSize(new Dimension(150, 36));
+        btnRegistrarme.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        btnRegistrarme.addActionListener(e -> {
+            String nombre = txtRegNombre.getText().trim();
+            String email = txtRegCorreo.getText().trim();
+            String password = new String(txtRegPassword.getPassword());
+            String password2 = new String(txtRegPassword2.getPassword());
+
+            // Esta comprobación se hace aquí porque el servidor solo recibe una contraseña
+            if (!password.equals(password2)) {
+                JOptionPane.showMessageDialog(this, "Las contraseñas no coinciden.");
+                return;
+            }
+
+            try {
+                Client cliente = new Client();
+                HashMap<String, Object> session = new HashMap<>();
+                session.put("nombre", nombre);
+                session.put("email", email);
+                session.put("password", password);
+                session = cliente.sentMessage("/registro", session);
+
+                boolean exito = (boolean) session.get("exito");
+                if (exito) {
+                    JOptionPane.showMessageDialog(this, "Cuenta creada correctamente. Ya puedes iniciar sesión.");
+                    txtCorreo.setText(email);
+                    limpiarRegistro();
+                    cardLayout.show(pnlContenedorPrincipal, "PANTALLA_LOGIN");
+                } else {
+                    JOptionPane.showMessageDialog(this, (String) session.get("error"));
+                }
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, "Error de conexión con el servidor.");
+            }
+        });
+
+        pnl.add(btnRegistrarme);
+        pnl.add(Box.createRigidArea(new Dimension(0, 10)));
+
+        JButton btnVolver = new JButton("Volver al login");
+        btnVolver.setFont(new Font("Arial", Font.PLAIN, 13));
+        btnVolver.setAlignmentX(Component.CENTER_ALIGNMENT);
+        btnVolver.addActionListener(e -> {
+            limpiarRegistro();
+            cardLayout.show(pnlContenedorPrincipal, "PANTALLA_LOGIN");
+        });
+        pnl.add(btnVolver);
+
+        return pnl;
+    }
+
+    // Añade al panel una etiqueta y debajo su campo de texto, con el mismo estilo que el login
+    private void anadirCampo(JPanel pnl, String texto, JTextField campo) {
+        JLabel lbl = new JLabel(texto);
+        lbl.setFont(new Font("Arial", Font.PLAIN, 13));
+        lbl.setAlignmentX(Component.CENTER_ALIGNMENT);
+        pnl.add(lbl);
+        pnl.add(Box.createRigidArea(new Dimension(0, 4)));
+
+        campo.setFont(new Font("Arial", Font.PLAIN, 14));
+        campo.setMaximumSize(new Dimension(300, 35));
+        campo.setPreferredSize(new Dimension(300, 35));
+        campo.setAlignmentX(Component.CENTER_ALIGNMENT);
+        pnl.add(campo);
+        pnl.add(Box.createRigidArea(new Dimension(0, 10)));
+    }
+
+    // Vacía los campos de la pantalla de registro
+    private void limpiarRegistro() {
+        txtRegNombre.setText("");
+        txtRegCorreo.setText("");
+        txtRegPassword.setText("");
+        txtRegPassword2.setText("");
     }
 
     private JPanel crearPanelAparcar() {
