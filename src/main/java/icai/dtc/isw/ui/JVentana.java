@@ -4,11 +4,12 @@ import icai.dtc.isw.client.Client;
 import icai.dtc.isw.domain.Customer;
 
 import javax.swing.*;
+import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
-import javax.swing.border.TitledBorder;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
 import java.net.URLConnection;
 import java.time.LocalTime;
@@ -69,8 +70,9 @@ public class JVentana extends JFrame {
         pnlContenedorPrincipal.add(scrollAparcar, "PANTALLA_APARCAR");
 
         this.setContentPane(pnlContenedorPrincipal);
-        this.setSize(760, 760);
-        this.setResizable(false);
+        this.setSize(1120, 760);
+        this.setMinimumSize(new Dimension(980, 680));
+        this.setResizable(true);
         this.setLocationRelativeTo(null);
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         this.setVisible(true);
@@ -265,164 +267,199 @@ public class JVentana extends JFrame {
     }
 
     private JPanel crearPanelAparcar() {
-        JPanel pnl = new JPanel();
-        pnl.setLayout(new BoxLayout(pnl, BoxLayout.Y_AXIS));
-        pnl.setBorder(new EmptyBorder(20, 25, 20, 25));
+        Color fondo = new Color(246, 247, 249);
+        Color azul = new Color(30, 96, 220);
+        JPanel pnl = new JPanel(new BorderLayout(18, 18));
+        pnl.setBackground(fondo);
+        pnl.setBorder(new EmptyBorder(24, 28, 24, 28));
 
-        // 1. Saludo
-        JPanel pnlSaludo = new JPanel(new BorderLayout());
+        JPanel cabecera = new JPanel(new BorderLayout());
+        cabecera.setOpaque(false);
+        JPanel textos = new JPanel();
+        textos.setOpaque(false);
+        textos.setLayout(new BoxLayout(textos, BoxLayout.Y_AXIS));
+        JLabel marca = new JLabel("ParkNow");
+        marca.setFont(new Font("Arial", Font.BOLD, 25));
+        marca.setForeground(new Color(24, 28, 38));
         lblSaludo = new JLabel("Hola");
-        lblSaludo.setFont(new Font("Arial", Font.BOLD, 18));
-        pnlSaludo.add(lblSaludo, BorderLayout.WEST);
-        pnl.add(pnlSaludo);
-        pnl.add(Box.createRigidArea(new Dimension(0, 15)));
+        lblSaludo.setFont(new Font("Arial", Font.PLAIN, 14));
+        lblSaludo.setForeground(new Color(105, 110, 122));
+        textos.add(marca);
+        textos.add(Box.createVerticalStrut(4));
+        textos.add(lblSaludo);
+        cabecera.add(textos, BorderLayout.WEST);
+        JLabel ciudad = new JLabel("MADRID  ·  MAPA EN TIEMPO REAL");
+        ciudad.setFont(new Font("Arial", Font.BOLD, 11));
+        ciudad.setForeground(new Color(105, 110, 122));
+        cabecera.add(ciudad, BorderLayout.EAST);
+        pnl.add(cabecera, BorderLayout.NORTH);
 
         mapaMadrid = new MadridMapPanel();
-        mapaMadrid.setAlignmentX(Component.CENTER_ALIGNMENT);
         JPanel mapaConControles = new JPanel(new BorderLayout());
-        mapaConControles.setAlignmentX(Component.CENTER_ALIGNMENT);
-        mapaConControles.setMaximumSize(new Dimension(680, 390));
+        mapaConControles.setBackground(Color.WHITE);
+        mapaConControles.setBorder(BorderFactory.createLineBorder(new Color(224, 227, 233)));
         mapaConControles.add(mapaMadrid, BorderLayout.CENTER);
-
-        JPanel controlesMapa = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 2));
-        JButton btnMenosZoom = new JButton("-");
-        JButton btnMasZoom = new JButton("+");
-        JButton btnCentrarMapa = new JButton("Centrar Madrid");
-        btnMenosZoom.setToolTipText("Alejar");
-        btnMasZoom.setToolTipText("Ampliar");
+        JPanel controlesMapa = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 8));
+        controlesMapa.setBackground(Color.WHITE);
+        JButton btnMenosZoom = crearBoton("-", false);
+        JButton btnMasZoom = crearBoton("+", false);
+        JButton btnCentrarMapa = crearBoton("Centrar Madrid", false);
         btnMenosZoom.addActionListener(e -> mapaMadrid.cambiarZoom(-1));
         btnMasZoom.addActionListener(e -> mapaMadrid.cambiarZoom(1));
         btnCentrarMapa.addActionListener(e -> mapaMadrid.centrar());
         controlesMapa.add(btnMenosZoom);
         controlesMapa.add(btnMasZoom);
         controlesMapa.add(btnCentrarMapa);
+        JLabel ayuda = new JLabel("Pulsa en el mapa para elegir tu plaza");
+        ayuda.setFont(new Font("Arial", Font.PLAIN, 12));
+        ayuda.setForeground(new Color(115, 120, 130));
+        controlesMapa.add(Box.createHorizontalStrut(8));
+        controlesMapa.add(ayuda);
         mapaConControles.add(controlesMapa, BorderLayout.SOUTH);
-        pnl.add(mapaConControles);
-        pnl.add(Box.createRigidArea(new Dimension(0, 10)));
+        pnl.add(mapaConControles, BorderLayout.CENTER);
 
-        // Al pulsar el mapa se elige el sitio donde se ha aparcado
+        JPanel lateral = new JPanel();
+        lateral.setLayout(new BoxLayout(lateral, BoxLayout.Y_AXIS));
+        lateral.setBackground(Color.WHITE);
+        lateral.setBorder(new EmptyBorder(20, 18, 20, 18));
+        lateral.setPreferredSize(new Dimension(285, 0));
+
+        JLabel titulo = new JLabel("Tu aparcamiento");
+        titulo.setFont(new Font("Arial", Font.BOLD, 19));
+        titulo.setForeground(new Color(24, 28, 38));
+        titulo.setAlignmentX(Component.LEFT_ALIGNMENT);
+        lateral.add(titulo);
+        JLabel descripcion = new JLabel("<html>Selecciona una posición y<br>confirma dónde has dejado el coche.</html>");
+        descripcion.setFont(new Font("Arial", Font.PLAIN, 13));
+        descripcion.setForeground(new Color(105, 110, 122));
+        descripcion.setAlignmentX(Component.LEFT_ALIGNMENT);
+        lateral.add(Box.createVerticalStrut(7));
+        lateral.add(descripcion);
+        lateral.add(Box.createVerticalStrut(22));
+
+        JPanel ubicacion = crearTarjeta("Ubicación seleccionada");
+        txtLatitud = crearCampo("40.41680");
+        txtLongitud = crearCampo("-3.70380");
+        JPanel coordenadas = new JPanel(new GridLayout(2, 1, 0, 8));
+        coordenadas.setOpaque(false);
+        coordenadas.add(crearCampoConEtiqueta("Latitud", txtLatitud));
+        coordenadas.add(crearCampoConEtiqueta("Longitud", txtLongitud));
+        ubicacion.add(coordenadas, BorderLayout.CENTER);
+        lateral.add(ubicacion);
+
+        btnAparcar = crearBoton("He aparcado aquí", true);
+        btnAparcar.setAlignmentX(Component.LEFT_ALIGNMENT);
+        lateral.add(Box.createVerticalStrut(14));
+        lateral.add(btnAparcar);
+        btnAparcar.addActionListener(e -> aparcarEnUbicacionSeleccionada());
+
+        JPanel estado = crearTarjeta("Estado actual");
+        lblEstadoTexto = new JLabel("No hay ningún vehículo aparcado.");
+        lblEstadoTexto.setFont(new Font("Arial", Font.PLAIN, 13));
+        estado.add(lblEstadoTexto, BorderLayout.CENTER);
+        lateral.add(Box.createVerticalStrut(18));
+        lateral.add(estado);
+
+        btnDesaparcar = crearBoton("Ya me he marchado", false);
+        btnDesaparcar.setEnabled(false);
+        estado.add(btnDesaparcar, BorderLayout.SOUTH);
+        btnDesaparcar.addActionListener(e -> desaparcar());
+        pnl.add(lateral, BorderLayout.EAST);
+
         mapaMadrid.setClickListener((lat, lon) -> {
             txtLatitud.setText(String.format(Locale.US, "%.5f", lat));
             txtLongitud.setText(String.format(Locale.US, "%.5f", lon));
         });
+        return pnl;
+    }
 
-        // 2. Registrar aparcamiento
-        JPanel pnlRegistrar = new JPanel(new BorderLayout(10, 10));
-        pnlRegistrar.setAlignmentX(Component.CENTER_ALIGNMENT);
-        pnlRegistrar.setMaximumSize(new Dimension(Integer.MAX_VALUE, 105));
-        pnlRegistrar.setBorder(BorderFactory.createTitledBorder(
-                BorderFactory.createEtchedBorder(), "📍 Registrar aparcamiento",
-                TitledBorder.LEFT, TitledBorder.TOP, new Font("Arial", Font.BOLD, 13)));
+    private JPanel crearTarjeta(String titulo) {
+        JPanel tarjeta = new JPanel(new BorderLayout(0, 10));
+        tarjeta.setBackground(new Color(247, 248, 250));
+        tarjeta.setBorder(new CompoundBorder(
+                BorderFactory.createLineBorder(new Color(232, 234, 239)),
+                new EmptyBorder(13, 12, 13, 12)));
+        tarjeta.setAlignmentX(Component.LEFT_ALIGNMENT);
+        tarjeta.setMaximumSize(new Dimension(Integer.MAX_VALUE, 150));
 
-        JPanel pnlCoords = new JPanel(new GridLayout(2, 2, 10, 5));
-        pnlCoords.add(new JLabel("Latitud:"));
-        pnlCoords.add(new JLabel("Longitud:"));
-        txtLatitud = new JTextField("40.4168");
-        txtLongitud = new JTextField("-3.7038");
-        pnlCoords.add(txtLatitud);
-        pnlCoords.add(txtLongitud);
+        JLabel etiqueta = new JLabel(titulo);
+        etiqueta.setFont(new Font("Arial", Font.BOLD, 12));
+        etiqueta.setForeground(new Color(45, 50, 60));
+        tarjeta.add(etiqueta, BorderLayout.NORTH);
+        return tarjeta;
+    }
 
-        btnAparcar = new JButton("🅿 He aparcado aquí");
-        btnAparcar.setFont(new Font("Arial", Font.BOLD, 13));
+    private JPanel crearCampoConEtiqueta(String etiqueta, JTextField campo) {
+        JPanel grupo = new JPanel(new BorderLayout(0, 3));
+        grupo.setOpaque(false);
+        JLabel titulo = new JLabel(etiqueta);
+        titulo.setFont(new Font("Arial", Font.PLAIN, 11));
+        titulo.setForeground(new Color(105, 110, 122));
+        grupo.add(titulo, BorderLayout.NORTH);
+        grupo.add(campo, BorderLayout.CENTER);
+        return grupo;
+    }
 
-        btnAparcar.addActionListener(e -> {
-            try {
-                double lat = Double.parseDouble(txtLatitud.getText().trim());
-                double lon = Double.parseDouble(txtLongitud.getText().trim());
-                int idUser = Integer.parseInt(usuarioActual.getId());
+    private JTextField crearCampo(String valor) {
+        JTextField campo = new JTextField(valor);
+        campo.setFont(new Font("Arial", Font.PLAIN, 13));
+        campo.setMaximumSize(new Dimension(Integer.MAX_VALUE, 34));
+        campo.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(220, 223, 229)),
+                new EmptyBorder(7, 9, 7, 9)));
+        return campo;
+    }
 
-                Client cliente = new Client();
-                HashMap<String, Object> session = new HashMap<>();
-                session.put("idUsuario", idUser);
-                session.put("latitud", lat);
-                session.put("longitud", lon);
+    private JButton crearBoton(String texto, boolean principal) {
+        JButton boton = new JButton(texto);
+        boton.setFont(new Font("Arial", Font.BOLD, 13));
+        boton.setFocusPainted(false);
+        boton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        boton.setBackground(principal ? new Color(30, 96, 220) : Color.WHITE);
+        boton.setForeground(principal ? Color.WHITE : new Color(45, 50, 60));
+        boton.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(principal ? new Color(30, 96, 220) : new Color(220, 223, 229)),
+                new EmptyBorder(8, 13, 8, 13)));
+        return boton;
+    }
 
-                session = cliente.sentMessage("/aparcar", session);
-                boolean exito = (boolean) session.get("exito");
-
-                if (exito) {
-                    horaAparcado = LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm"));
-                    estaAparcado = true;
-                    mapaMadrid.setMyCar(lat, lon);
-                    actualizarEstadoVisual();
-                    cargarAparcamientosEnMapa();
-                    JOptionPane.showMessageDialog(this, "Aparcado correctamente.");
-                } else {
-                    JOptionPane.showMessageDialog(this, "Error al registrar aparcamiento en la base de datos.");
-                }
-            } catch (NumberFormatException ex) {
-                JOptionPane.showMessageDialog(this, "Introduce coordenadas numéricas válidas.");
-            }
-        });
-
-        pnlRegistrar.add(pnlCoords, BorderLayout.CENTER);
-        pnlRegistrar.add(btnAparcar, BorderLayout.SOUTH);
-        pnl.add(pnlRegistrar);
-        pnl.add(Box.createRigidArea(new Dimension(0, 15)));
-
-        // 3. Estado del aparcamiento
-        JPanel pnlEstado = new JPanel(new BorderLayout(10, 10));
-        pnlEstado.setAlignmentX(Component.CENTER_ALIGNMENT);
-        pnlEstado.setMaximumSize(new Dimension(Integer.MAX_VALUE, 80));
-        pnlEstado.setBorder(BorderFactory.createTitledBorder(
-                BorderFactory.createEtchedBorder(), "Estado del aparcamiento",
-                TitledBorder.LEFT, TitledBorder.TOP, new Font("Arial", Font.BOLD, 13)));
-
-        lblEstadoTexto = new JLabel("No hay ningún vehículo aparcado.");
-        lblEstadoTexto.setFont(new Font("Arial", Font.PLAIN, 13));
-
-        btnDesaparcar = new JButton("🚗 Ya me he marchado");
-        btnDesaparcar.setFont(new Font("Arial", Font.BOLD, 13));
-        btnDesaparcar.setEnabled(false);
-
-        btnDesaparcar.addActionListener(e -> {
+    private void aparcarEnUbicacionSeleccionada() {
+        try {
+            double lat = Double.parseDouble(txtLatitud.getText().trim());
+            double lon = Double.parseDouble(txtLongitud.getText().trim());
             int idUser = Integer.parseInt(usuarioActual.getId());
-
-            Client cliente = new Client();
             HashMap<String, Object> session = new HashMap<>();
             session.put("idUsuario", idUser);
-
-            session = cliente.sentMessage("/desaparcar", session);
-            boolean exito = (boolean) session.get("exito");
-
-            if (exito) {
-                estaAparcado = false;
-                horaAparcado = "";
-                mapaMadrid.setMyCar(null, null);
+            session.put("latitud", lat);
+            session.put("longitud", lon);
+            session = new Client().sentMessage("/aparcar", session);
+            if ((boolean) session.get("exito")) {
+                horaAparcado = LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm"));
+                estaAparcado = true;
+                mapaMadrid.setMyCar(lat, lon);
                 actualizarEstadoVisual();
                 cargarAparcamientosEnMapa();
-                JOptionPane.showMessageDialog(this, "Has retirado el coche. Plaza liberada.");
             } else {
-                JOptionPane.showMessageDialog(this, "Error al eliminar el registro.");
+                JOptionPane.showMessageDialog(this, "No se ha podido registrar el aparcamiento.");
             }
-        });
+        } catch (NumberFormatException ex) {
+            JOptionPane.showMessageDialog(this, "Introduce coordenadas numéricas válidas.");
+        }
+    }
 
-        pnlEstado.add(lblEstadoTexto, BorderLayout.CENTER);
-        pnlEstado.add(btnDesaparcar, BorderLayout.SOUTH);
-        pnl.add(pnlEstado);
-        pnl.add(Box.createRigidArea(new Dimension(0, 15)));
-
-        // 4. Consultar aparcamientos
-        JPanel pnlConsultar = new JPanel(new BorderLayout(5, 5));
-        pnlConsultar.setAlignmentX(Component.CENTER_ALIGNMENT);
-        pnlConsultar.setMaximumSize(new Dimension(Integer.MAX_VALUE, 130));
-        pnlConsultar.setBorder(BorderFactory.createTitledBorder(
-                BorderFactory.createEtchedBorder(), "Consultar aparcamientos",
-                TitledBorder.LEFT, TitledBorder.TOP, new Font("Arial", Font.BOLD, 13)));
-
-        JButton btnFlecha = new JButton("⬇");
-        btnFlecha.setPreferredSize(new Dimension(50, 30));
-        JTextArea txtAparcamientos = new JTextArea(4, 30);
-        txtAparcamientos.setEditable(false);
-        btnFlecha.addActionListener(e -> {
-            txtAparcamientos.setText(cargarAparcamientosEnMapa());
-        });
-
-        pnlConsultar.add(new JScrollPane(txtAparcamientos), BorderLayout.CENTER);
-        pnlConsultar.add(btnFlecha, BorderLayout.EAST);
-        pnl.add(pnlConsultar);
-
-        return pnl;
+    private void desaparcar() {
+        HashMap<String, Object> session = new HashMap<>();
+        session.put("idUsuario", Integer.parseInt(usuarioActual.getId()));
+        session = new Client().sentMessage("/desaparcar", session);
+        if ((boolean) session.get("exito")) {
+            estaAparcado = false;
+            horaAparcado = "";
+            mapaMadrid.setMyCar(null, null);
+            actualizarEstadoVisual();
+            cargarAparcamientosEnMapa();
+        } else {
+            JOptionPane.showMessageDialog(this, "No se ha podido liberar la plaza.");
+        }
     }
 
     private void actualizarEstadoVisual() {
@@ -494,11 +531,16 @@ public class JVentana extends JFrame {
         private int ultimoY;
         private final Map<String, BufferedImage> teselas = new HashMap<>();
         private final Map<String, Boolean> teselasCargando = new HashMap<>();
+        private final BufferedImage iconoLibre;
+        private final BufferedImage iconoOcupada;
+        private final BufferedImage iconoMio;
 
         private MadridMapPanel() {
-            setPreferredSize(new Dimension(660, 350));
-            setMinimumSize(new Dimension(660, 350));
-            setMaximumSize(new Dimension(660, 350));
+            iconoLibre = cargarIcono("/markers/parking_libre.png");
+            iconoOcupada = cargarIcono("/markers/parking_ocupado.png");
+            iconoMio = cargarIcono("/markers/mi_parking.png");
+            setPreferredSize(new Dimension(760, 560));
+            setMinimumSize(new Dimension(620, 420));
             setBorder(BorderFactory.createLineBorder(new Color(150, 180, 210)));
             setToolTipText("Pulsa en el mapa para elegir una coordenada");
             setBackground(new Color(238, 241, 238));
@@ -550,6 +592,21 @@ public class JVentana extends JFrame {
             myLatitude = latitude;
             myLongitude = longitude;
             repaint();
+        }
+
+        private BufferedImage cargarIcono(String ruta) {
+            try (InputStream entrada = JVentana.class.getResourceAsStream(ruta)) {
+                if (entrada == null) {
+                    throw new IllegalStateException("No se encuentra el icono del mapa: " + ruta);
+                }
+                BufferedImage imagen = ImageIO.read(entrada);
+                if (imagen == null) {
+                    throw new IllegalStateException("El icono del mapa no es una imagen válida: " + ruta);
+                }
+                return imagen;
+            } catch (IOException ex) {
+                throw new IllegalStateException("No se puede cargar el icono del mapa: " + ruta, ex);
+            }
         }
 
         private void cambiarZoom(int cambio) {
@@ -717,37 +774,16 @@ public class JVentana extends JFrame {
         }
 
         private void dibujarCoche(Graphics2D g, int x, int y, boolean esMio) {
-            Color color = esMio ? new Color(35, 100, 220) : new Color(220, 55, 55);
-            g.setColor(new Color(0, 0, 0, 70));
-            g.fillOval(x - 12, y + 7, 24, 6);
-            g.setColor(color);
-            g.fillOval(x - 13, y - 25, 26, 26);
-            g.fillPolygon(new int[]{x - 7, x, x + 7}, new int[]{y - 5, y + 6, y - 5}, 3);
-            g.setColor(new Color(255, 255, 255, 235));
-            if (esMio) {
-                g.setStroke(new BasicStroke(2f));
-                g.drawLine(x - 7, y - 12, x + 7, y - 12);
-                g.drawLine(x, y - 19, x, y - 5);
-            } else {
-                g.fillRoundRect(x - 8, y - 15, 16, 8, 3, 3);
-                g.fillRoundRect(x - 5, y - 19, 10, 6, 2, 2);
-                g.setColor(color);
-                g.fillOval(x - 7, y - 10, 4, 5);
-                g.fillOval(x + 3, y - 10, 4, 5);
-            }
-            g.setStroke(new BasicStroke(1f));
+            dibujarIcono(g, x, y, esMio ? iconoMio : iconoOcupada);
         }
 
         private void dibujarPlazaLibre(Graphics2D g, int x, int y) {
-            g.setColor(new Color(0, 0, 0, 70));
-            g.fillOval(x - 12, y + 7, 24, 6);
-            g.setColor(new Color(35, 165, 85));
-            g.fillOval(x - 13, y - 25, 26, 26);
-            g.fillPolygon(new int[]{x - 7, x, x + 7}, new int[]{y - 5, y + 6, y - 5}, 3);
-            g.setColor(Color.WHITE);
-            g.setFont(g.getFont().deriveFont(Font.BOLD, 16f));
-            g.drawString("P", x - 5, y - 7);
-            g.setFont(g.getFont().deriveFont(Font.PLAIN, 12f));
+            dibujarIcono(g, x, y, iconoLibre);
+        }
+
+        private void dibujarIcono(Graphics2D g, int x, int y, BufferedImage icono) {
+            int tamano = 46;
+            g.drawImage(icono, x - tamano / 2, y - tamano, tamano, tamano, null);
         }
 
         private void dibujarLeyenda(Graphics2D g) {
