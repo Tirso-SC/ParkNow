@@ -1,6 +1,7 @@
 package icai.dtc.isw.controler;
 
 import java.util.ArrayList;
+import java.util.Map;
 
 import icai.dtc.isw.dao.CustomerDAO;
 import icai.dtc.isw.domain.Customer;
@@ -71,6 +72,10 @@ public class CustomerControler {
 
     public boolean desaparcar(int idUsuario) {
         return customerDAO.desaparcarCoche(idUsuario);
+    }
+
+    public Map<String, Object> getAparcamientoActivo(int idUsuario) {
+        return customerDAO.getAparcamientoActivo(idUsuario);
     }
 
     public String getAparcamientos() {

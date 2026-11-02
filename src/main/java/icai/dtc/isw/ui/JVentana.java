@@ -136,6 +136,7 @@ public class JVentana extends JFrame {
                     lblSaludo.setText("Hola, " + usuarioActual.getName());
                     cardLayout.show(pnlContenedorPrincipal, "PANTALLA_APARCAR");
                     cargarAparcamientosEnMapa();
+                    cargarMiAparcamiento();
                 } else {
                     JOptionPane.showMessageDialog(this, "Correo o contraseña incorrectos");
                 }
@@ -460,6 +461,30 @@ public class JVentana extends JFrame {
         } else {
             JOptionPane.showMessageDialog(this, "No se ha podido liberar la plaza.");
         }
+    }
+
+    private void cargarMiAparcamiento() {
+        HashMap<String, Object> peticion = new HashMap<>();
+        peticion.put("idUsuario", Integer.parseInt(usuarioActual.getId()));
+        HashMap<String, Object> respuesta = new Client().sentMessage("/getAparcamientoActivo", peticion);
+        if (!respuesta.containsKey("latitud")) {
+            estaAparcado = false;
+            actualizarEstadoVisual();
+            return;
+        }
+
+        double lat = ((Number) respuesta.get("latitud")).doubleValue();
+        double lon = ((Number) respuesta.get("longitud")).doubleValue();
+        Object horaInicio = respuesta.get("horaInicio");
+        horaAparcado = horaInicio == null ? "" : horaInicio.toString();
+        if (horaAparcado.length() >= 16) {
+            horaAparcado = horaAparcado.substring(11, 16);
+        }
+        estaAparcado = true;
+        txtLatitud.setText(String.format(Locale.US, "%.5f", lat));
+        txtLongitud.setText(String.format(Locale.US, "%.5f", lon));
+        mapaMadrid.setMyCar(lat, lon);
+        actualizarEstadoVisual();
     }
 
     private void actualizarEstadoVisual() {

@@ -5,6 +5,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 import icai.dtc.isw.domain.Customer;
 
@@ -170,6 +172,27 @@ public class CustomerDAO {
             ex.printStackTrace();
             return false;
         }
+    }
+
+    public Map<String, Object> getAparcamientoActivo(int idUsuario) {
+        Connection con = ConnectionDAO.getInstance().getConnection();
+        String sql = "SELECT latitud, longitud, hora_inicio FROM public.aparcamientos " +
+                "WHERE id_usuario = ? AND hora_fin IS NULL ORDER BY hora_inicio DESC LIMIT 1";
+        Map<String, Object> aparcamiento = new HashMap<>();
+
+        try (PreparedStatement pst = con.prepareStatement(sql)) {
+            pst.setInt(1, idUsuario);
+            try (ResultSet rs = pst.executeQuery()) {
+                if (rs.next()) {
+                    aparcamiento.put("latitud", rs.getDouble("latitud"));
+                    aparcamiento.put("longitud", rs.getDouble("longitud"));
+                    aparcamiento.put("horaInicio", rs.getTimestamp("hora_inicio").toString());
+                }
+            }
+        } catch (SQLException ex) {
+            throw new IllegalStateException("No se pudo recuperar el aparcamiento del usuario " + idUsuario, ex);
+        }
+        return aparcamiento;
     }
 
     public String getAparcamientos() {

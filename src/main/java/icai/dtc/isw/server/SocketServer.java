@@ -9,6 +9,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map;
 
 import icai.dtc.isw.configuration.PropertiesISW;
 import icai.dtc.isw.controler.CustomerControler;
@@ -125,6 +126,17 @@ public class SocketServer extends Thread {
                     String aparcamientos = customerControler.getAparcamientos();
                     mensajeOut.setContext("/getAparcamientosResponse");
                     session.put("aparcamientos", aparcamientos);
+                    mensajeOut.setSession(session);
+                    objectOutputStream.writeObject(mensajeOut);
+                    break;
+
+                case "/getAparcamientoActivo":
+                    int idUsuarioActivo = (int) session.get("idUsuario");
+                    customerControler = new CustomerControler();
+                    Map<String, Object> aparcamientoActivo =
+                            customerControler.getAparcamientoActivo(idUsuarioActivo);
+                    mensajeOut.setContext("/getAparcamientoActivoResponse");
+                    session.putAll(aparcamientoActivo);
                     mensajeOut.setSession(session);
                     objectOutputStream.writeObject(mensajeOut);
                     break;

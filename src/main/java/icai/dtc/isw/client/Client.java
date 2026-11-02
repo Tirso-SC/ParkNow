@@ -77,6 +77,7 @@ public class Client {
 				session=mensajeVuelta.getSession();
 				break;
 			case "/getAparcamientosResponse":
+			case "/getAparcamientoActivoResponse":
 				session=mensajeVuelta.getSession();
 				break;
 			default:
