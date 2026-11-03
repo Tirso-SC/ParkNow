@@ -80,6 +80,9 @@ public class Client {
 			case "/getAparcamientoActivoResponse":
 				session=mensajeVuelta.getSession();
 				break;
+			case "/infoBarrioResponse":
+				session=mensajeVuelta.getSession();
+				break;
 			default:
 
 				System.out.println("\nError a la vuelta");

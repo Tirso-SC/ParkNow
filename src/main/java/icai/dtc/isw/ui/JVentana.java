@@ -354,6 +354,13 @@ public class JVentana extends JFrame {
         lateral.add(btnAparcar);
         btnAparcar.addActionListener(e -> aparcarEnUbicacionSeleccionada());
 
+        // Botón para consultar las plazas SER del barrio del punto seleccionado en el mapa
+        JButton btnVerPlazas = crearBoton("🔍 Ver plazas de esta zona", false);
+        btnVerPlazas.setAlignmentX(Component.LEFT_ALIGNMENT);
+        lateral.add(Box.createVerticalStrut(8));
+        lateral.add(btnVerPlazas);
+        btnVerPlazas.addActionListener(e -> verPlazasDeLaZona());
+
         JPanel estado = crearTarjeta("Estado actual");
         lblEstadoTexto = new JLabel("No hay ningún vehículo aparcado.");
         lblEstadoTexto.setFont(new Font("Arial", Font.PLAIN, 13));
@@ -445,6 +452,39 @@ public class JVentana extends JFrame {
             }
         } catch (NumberFormatException ex) {
             JOptionPane.showMessageDialog(this, "Introduce coordenadas numéricas válidas.");
+        }
+    }
+
+    // Pide al servidor la información SER del barrio de las coordenadas seleccionadas
+    // (las que se rellenan al pulsar en el mapa) y la muestra en una ventana
+    private void verPlazasDeLaZona() {
+        try {
+            double lat = Double.parseDouble(txtLatitud.getText().trim());
+            double lon = Double.parseDouble(txtLongitud.getText().trim());
+            HashMap<String, Object> session = new HashMap<>();
+            session.put("latitud", lat);
+            session.put("longitud", lon);
+            session = new Client().sentMessage("/infoBarrio", session);
+
+            // Si el servidor devuelve "error" es que no hay plazas SER cerca
+            if (session.get("error") != null) {
+                JOptionPane.showMessageDialog(this, "Esta zona no tiene plazas reguladas (SER) registradas.");
+                return;
+            }
+
+            String mensaje = "Barrio: " + session.get("barrio") + " (" + session.get("distrito") + ")\n"
+                    + "Plazas SER: " + session.get("totalPlazas")
+                    + " (" + session.get("plazasVerdes") + " verdes, "
+                    + session.get("plazasAzules") + " azules)\n"
+                    + "Coches de ParkNow aparcados ahora: " + session.get("cochesAparcados") + "\n"
+                    + "Plazas libres estimadas: " + session.get("plazasLibres") + "\n\n"
+                    + "(Estimación basada en datos del Ayuntamiento y en los usuarios de ParkNow)";
+            JOptionPane.showMessageDialog(this, mensaje, "Plazas de esta zona", JOptionPane.INFORMATION_MESSAGE);
+        } catch (NumberFormatException ex) {
+            JOptionPane.showMessageDialog(this, "Introduce coordenadas numéricas válidas.");
+        } catch (Exception ex) {
+            // Si el servidor no responde, avisamos pero la aplicación sigue abierta
+            JOptionPane.showMessageDialog(this, "Error de conexión con el servidor");
         }
     }
 

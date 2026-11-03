@@ -141,6 +141,19 @@ public class SocketServer extends Thread {
                     objectOutputStream.writeObject(mensajeOut);
                     break;
 
+                case "/infoBarrio":
+                    double latBarrio = (double) session.get("latitud");
+                    double lonBarrio = (double) session.get("longitud");
+                    customerControler = new CustomerControler();
+                    // Devuelve barrio, distrito, totalPlazas, plazasVerdes, plazasAzules,
+                    // cochesAparcados y plazasLibres; o solo "error" si no hay plazas SER cerca
+                    HashMap<String, Object> infoBarrio = customerControler.infoBarrio(latBarrio, lonBarrio);
+                    mensajeOut.setContext("/infoBarrioResponse");
+                    session.putAll(infoBarrio);
+                    mensajeOut.setSession(session);
+                    objectOutputStream.writeObject(mensajeOut);
+                    break;
+
                 default:
                     System.out.println("\nParámetro no encontrado");
                     break;
