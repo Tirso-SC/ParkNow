@@ -141,7 +141,7 @@ public class JVentana extends JFrame {
                     JOptionPane.showMessageDialog(this, "Correo o contraseña incorrectos");
                 }
             } catch (Exception ex) {
-                JOptionPane.showMessageDialog(this, "Error de conexión con el servidor.");
+                mostrarError(ex);
             }
         });
 
@@ -224,7 +224,7 @@ public class JVentana extends JFrame {
                     JOptionPane.showMessageDialog(this, (String) session.get("error"));
                 }
             } catch (Exception ex) {
-                JOptionPane.showMessageDialog(this, "Error de conexión con el servidor.");
+                mostrarError(ex);
             }
         });
 
@@ -452,7 +452,15 @@ public class JVentana extends JFrame {
             }
         } catch (NumberFormatException ex) {
             JOptionPane.showMessageDialog(this, "Introduce coordenadas numéricas válidas.");
+        } catch (Exception ex) {
+            mostrarError(ex);
         }
+    }
+
+    // Muestra el motivo del fallo: o no hay conexión con el servidor, o el servidor ha tenido un error
+    private void mostrarError(Exception ex) {
+        String motivo = ex.getMessage() != null ? ex.getMessage() : "Error desconocido.";
+        JOptionPane.showMessageDialog(this, motivo, "Error", JOptionPane.ERROR_MESSAGE);
     }
 
     // Pide al servidor la información SER del barrio de las coordenadas seleccionadas
@@ -475,7 +483,8 @@ public class JVentana extends JFrame {
             String mensaje = "Barrio: " + session.get("barrio") + " (" + session.get("distrito") + ")\n"
                     + "Plazas SER: " + session.get("totalPlazas")
                     + " (" + session.get("plazasVerdes") + " verdes, "
-                    + session.get("plazasAzules") + " azules)\n"
+                    + session.get("plazasAzules") + " azules, "
+                    + session.get("plazasOtras") + " de otros colores)\n"
                     + "Coches de ParkNow aparcados ahora: " + session.get("cochesAparcados") + "\n"
                     + "Plazas libres estimadas: " + session.get("plazasLibres") + "\n\n"
                     + "(Estimación basada en datos del Ayuntamiento y en los usuarios de ParkNow)";
@@ -483,23 +492,27 @@ public class JVentana extends JFrame {
         } catch (NumberFormatException ex) {
             JOptionPane.showMessageDialog(this, "Introduce coordenadas numéricas válidas.");
         } catch (Exception ex) {
-            // Si el servidor no responde, avisamos pero la aplicación sigue abierta
-            JOptionPane.showMessageDialog(this, "Error de conexión con el servidor");
+            // Si el servidor no responde o falla, avisamos pero la aplicación sigue abierta
+            mostrarError(ex);
         }
     }
 
     private void desaparcar() {
-        HashMap<String, Object> session = new HashMap<>();
-        session.put("idUsuario", Integer.parseInt(usuarioActual.getId()));
-        session = new Client().sentMessage("/desaparcar", session);
-        if ((boolean) session.get("exito")) {
-            estaAparcado = false;
-            horaAparcado = "";
-            mapaMadrid.setMyCar(null, null);
-            actualizarEstadoVisual();
-            cargarAparcamientosEnMapa();
-        } else {
-            JOptionPane.showMessageDialog(this, "No se ha podido liberar la plaza.");
+        try {
+            HashMap<String, Object> session = new HashMap<>();
+            session.put("idUsuario", Integer.parseInt(usuarioActual.getId()));
+            session = new Client().sentMessage("/desaparcar", session);
+            if ((boolean) session.get("exito")) {
+                estaAparcado = false;
+                horaAparcado = "";
+                mapaMadrid.setMyCar(null, null);
+                actualizarEstadoVisual();
+                cargarAparcamientosEnMapa();
+            } else {
+                JOptionPane.showMessageDialog(this, "No se ha podido liberar la plaza.");
+            }
+        } catch (Exception ex) {
+            mostrarError(ex);
         }
     }
 
