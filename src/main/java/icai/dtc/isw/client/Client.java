@@ -45,7 +45,16 @@ public class Client {
 		mensajeEnvio.setContext(Context);///getCustomer"
 		mensajeEnvio.setSession(session);
 		this.sent(mensajeEnvio,mensajeVuelta);
-		
+
+		// Si el servidor no ha respondido, el contexto de vuelta sigue vacío
+		if (mensajeVuelta.getContext().isEmpty()) {
+			throw new IllegalStateException("No se ha podido conectar con el servidor. ¿Está arrancado?");
+		}
+		// El servidor ha contestado, pero avisando de que algo ha fallado allí
+		if (mensajeVuelta.getContext().equals("/errorServidor")) {
+			throw new IllegalStateException((String) mensajeVuelta.getSession().get("errorServidor"));
+		}
+
 		
 		switch (mensajeVuelta.getContext()) {
 			case "/getCustomersResponse":
@@ -64,6 +73,7 @@ public class Client {
 				}
 				break;
 			case "/loginResponse":
+			case "/registroResponse":
 				session=mensajeVuelta.getSession();
 				break;
 			case "/aparcarResponse":
@@ -71,6 +81,10 @@ public class Client {
 				session=mensajeVuelta.getSession();
 				break;
 			case "/getAparcamientosResponse":
+			case "/getAparcamientoActivoResponse":
+				session=mensajeVuelta.getSession();
+				break;
+			case "/infoBarrioResponse":
 				session=mensajeVuelta.getSession();
 				break;
 			default:
@@ -114,11 +128,12 @@ public class Client {
 				
 			} catch (UnknownHostException e) {
 				System.err.println("Unknown host: " + host);
-				System.exit(1);
+				return; // no cerramos la aplicación: sentMessage avisará del error
 			} catch (IOException e) {
 				System.err.println("Unable to get streams from server");
-				System.exit(1);
-			}		
+				if (echoSocket != null) echoSocket.close();
+				return; // no cerramos la aplicación: sentMessage avisará del error
+			}
 
 			/** Closing all the resources */
 			out.close();
