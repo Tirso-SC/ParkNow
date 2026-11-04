@@ -447,6 +447,9 @@ public class JVentana extends JFrame {
                 mapaMadrid.setMyCar(lat, lon);
                 actualizarEstadoVisual();
                 cargarAparcamientosEnMapa();
+            } else if (session.get("error") != null) {
+                // El servidor explica por qué no se puede aparcar (por ejemplo, el punto no está en una calle)
+                JOptionPane.showMessageDialog(this, (String) session.get("error"));
             } else {
                 JOptionPane.showMessageDialog(this, "No se ha podido registrar el aparcamiento.");
             }

@@ -93,6 +93,24 @@ public class CustomerControler {
 
     PlazasSERDAO plazasSERDAO = new PlazasSERDAO();
 
+    // Distancia máxima a una plaza SER para considerar que el punto está en una calle.
+    // Se puede ajustar: si se pone más pequeña, la regla es más estricta;
+    // si se pone más grande, se permite aparcar más lejos de las plazas.
+    public static final double DISTANCIA_MAXIMA_CALLE_METROS = 40;
+
+    // Comprueba si se puede aparcar en el punto (lat, lon): solo se puede en la calle,
+    // es decir, cerca de alguna plaza SER del CSV (no encima de un edificio ni en un parque).
+    // Devuelve null si se puede aparcar, o un texto explicando por qué no.
+    // No usa la base de datos: solo el CSV de plazas SER.
+    public String validarUbicacionAparcar(double lat, double lon) {
+        PlazaSER masCercana = buscarPlazaMasCercana(plazasSERDAO.getPlazas(), lat, lon);
+        if (masCercana != null && Distancia.distanciaMetros(lat, lon,
+                masCercana.getLatitud(), masCercana.getLongitud()) < DISTANCIA_MAXIMA_CALLE_METROS) {
+            return null;
+        }
+        return "Ahí no se puede aparcar. Elige un punto sobre una calle con plazas de aparcamiento (zona SER).";
+    }
+
     // Devuelve la información del barrio donde está el punto (lat, lon):
     // barrio, distrito, plazas SER (total, verdes, azules, otras), coches de ParkNow
     // aparcados ahora y una estimación de plazas libres.
