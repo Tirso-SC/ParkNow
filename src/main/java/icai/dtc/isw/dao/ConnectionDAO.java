@@ -8,7 +8,11 @@ public class ConnectionDAO {
 	private static ConnectionDAO connectionDAO;
 	private Connection con;
 	
-	private ConnectionDAO() {		
+	private ConnectionDAO() {
+		conectar();
+	}
+
+	private void conectar() {
 		String url = PropertiesISW.getInstance().getProperty("ddbb.connection");
         String user = PropertiesISW.getInstance().getProperty("ddbb.user");
         String password = PropertiesISW.getInstance().getProperty("ddbb.password");
@@ -18,17 +22,25 @@ public class ConnectionDAO {
             throw new IllegalStateException(
                     "No se pudo conectar con la base de datos usando " + url, ex);
         }
-	    
 	}
 	
-	public static ConnectionDAO getInstance() {
+	public static synchronized ConnectionDAO getInstance() {
 		if (connectionDAO == null) {
 			connectionDAO=new ConnectionDAO();
 		}
 		return connectionDAO;
 	}
 	
-	public Connection getConnection() {
+	// La base de datos cierra las conexiones que llevan mucho tiempo sin usarse.
+	// Si la nuestra se ha cerrado, abrimos una nueva antes de devolverla.
+	public synchronized Connection getConnection() {
+		try {
+			if (con == null || !con.isValid(2)) {
+				conectar();
+			}
+		} catch (SQLException ex) {
+			conectar();
+		}
 		return con;
 	}
 
