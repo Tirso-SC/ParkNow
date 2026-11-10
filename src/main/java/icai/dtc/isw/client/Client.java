@@ -48,7 +48,11 @@ public class Client {
 
 		// Si el servidor no ha respondido, el contexto de vuelta sigue vacío
 		if (mensajeVuelta.getContext().isEmpty()) {
-			throw new IllegalStateException("No se ha recibido respuesta del servidor");
+			throw new IllegalStateException("No se ha podido conectar con el servidor. ¿Está arrancado?");
+		}
+		// El servidor ha contestado, pero avisando de que algo ha fallado allí
+		if (mensajeVuelta.getContext().equals("/errorServidor")) {
+			throw new IllegalStateException((String) mensajeVuelta.getSession().get("errorServidor"));
 		}
 
 		
@@ -78,6 +82,9 @@ public class Client {
 				break;
 			case "/getAparcamientosResponse":
 			case "/getAparcamientoActivoResponse":
+				session=mensajeVuelta.getSession();
+				break;
+			case "/infoBarrioResponse":
 				session=mensajeVuelta.getSession();
 				break;
 			default:

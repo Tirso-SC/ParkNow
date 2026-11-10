@@ -220,6 +220,24 @@ public class CustomerDAO {
         return texto;
     }
 
+    // Devuelve las coordenadas de los coches que están aparcados ahora (sin hora de salida).
+    // Cada elemento de la lista es un array {latitud, longitud}
+    public ArrayList<double[]> getCochesAparcadosAhora() {
+        Connection con = ConnectionDAO.getInstance().getConnection();
+        String sql = "SELECT latitud, longitud FROM public.aparcamientos WHERE hora_fin IS NULL";
+        ArrayList<double[]> coches = new ArrayList<>();
+
+        try (PreparedStatement pst = con.prepareStatement(sql);
+             ResultSet rs = pst.executeQuery()) {
+            while (rs.next()) {
+                coches.add(new double[]{rs.getDouble("latitud"), rs.getDouble("longitud")});
+            }
+        } catch (SQLException ex) {
+            throw new IllegalStateException("No se pudieron recuperar los coches aparcados", ex);
+        }
+        return coches;
+    }
+
     public static void main(String[] args) {
         CustomerDAO customerDAO = new CustomerDAO();
         ArrayList<Customer> lista = new ArrayList<>();

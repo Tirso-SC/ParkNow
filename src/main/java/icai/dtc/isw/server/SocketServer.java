@@ -42,108 +42,129 @@ public class SocketServer extends Thread {
             HashMap<String, Object> session = mensajeIn.getSession();
             CustomerControler customerControler;
 
-            switch (mensajeIn.getContext()) {
-                case "/getCustomers":
-                    customerControler = new CustomerControler();
-                    ArrayList<Customer> lista = new ArrayList<Customer>();
-                    customerControler.getCustomers(lista);
-                    mensajeOut.setContext("/getCustomersResponse");
-                    session.put("Customer", lista);
-                    mensajeOut.setSession(session);
-                    objectOutputStream.writeObject(mensajeOut);
-                    break;
-
-                case "/getCustomer":
-                    int id = (int) session.get("id");
-                    customerControler = new CustomerControler();
-                    Customer cu = customerControler.getCustomer(id);
-                    if (cu != null) {
-                        System.out.println("id:" + cu.getId());
-                    } else {
-                        System.out.println("No encontrado en la base de datos");
-                    }
-
-                    mensajeOut.setContext("/getCustomerResponse");
-                    session.put("Customer", cu);
-                    mensajeOut.setSession(session);
-                    objectOutputStream.writeObject(mensajeOut);
-                    break;
-
-                case "/login":
-                    String emailLogin = (String) session.get("email");
-                    String passwordLogin = (String) session.get("password");
-                    customerControler = new CustomerControler();
-                    Customer cuLogin = customerControler.login(emailLogin, passwordLogin);
-
-                    mensajeOut.setContext("/loginResponse");
-                    session.remove("password"); // la contraseña no vuelve al cliente
-                    session.put("Customer", cuLogin);
-                    mensajeOut.setSession(session);
-                    objectOutputStream.writeObject(mensajeOut);
-                    break;
-
-                case "/registro":
-                    String nombreRegistro = (String) session.get("nombre");
-                    String emailRegistro = (String) session.get("email");
-                    String passwordRegistro = (String) session.get("password");
-                    customerControler = new CustomerControler();
-                    String error = customerControler.registrar(nombreRegistro, emailRegistro, passwordRegistro);
-
-                    mensajeOut.setContext("/registroResponse");
-                    session.remove("password"); // la contraseña no vuelve al cliente
-                    session.put("exito", error == null);
-                    session.put("error", error);
-                    mensajeOut.setSession(session);
-                    objectOutputStream.writeObject(mensajeOut);
-                    break;
-
-                case "/aparcar":
-                    int idAparcar = (int) session.get("idUsuario");
-                    double lat = (double) session.get("latitud");
-                    double lon = (double) session.get("longitud");
-                    customerControler = new CustomerControler();
-                    boolean okAparcar = customerControler.aparcar(idAparcar, lat, lon);
-
-                    mensajeOut.setContext("/aparcarResponse");
-                    session.put("exito", okAparcar);
-                    mensajeOut.setSession(session);
-                    objectOutputStream.writeObject(mensajeOut);
-                    break;
-
-                case "/desaparcar":
-                    int idDesaparcar = (int) session.get("idUsuario");
-                    customerControler = new CustomerControler();
-                    boolean okDesaparcar = customerControler.desaparcar(idDesaparcar);
-
-                    mensajeOut.setContext("/desaparcarResponse");
-                    session.put("exito", okDesaparcar);
-                    mensajeOut.setSession(session);
-                    objectOutputStream.writeObject(mensajeOut);
-                    break;
-
-                case "/getAparcamientos":
-                    customerControler = new CustomerControler();
-                    String aparcamientos = customerControler.getAparcamientos();
-                    mensajeOut.setContext("/getAparcamientosResponse");
-                    session.put("aparcamientos", aparcamientos);
-                    mensajeOut.setSession(session);
-                    objectOutputStream.writeObject(mensajeOut);
-                    break;
-
-                case "/getAparcamientoActivo":
-                    int idUsuarioActivo = (int) session.get("idUsuario");
-                    customerControler = new CustomerControler();
-                    Map<String, Object> aparcamientoActivo =
-                            customerControler.getAparcamientoActivo(idUsuarioActivo);
-                    mensajeOut.setContext("/getAparcamientoActivoResponse");
-                    session.putAll(aparcamientoActivo);
-                    mensajeOut.setSession(session);
-                    objectOutputStream.writeObject(mensajeOut);
-                    break;
-
-                default:
-                    System.out.println("\nParámetro no encontrado");
-                    break;
+            try {
+                switch (mensajeIn.getContext()) {
+                    case "/getCustomers":
+                        customerControler = new CustomerControler();
+                        ArrayList<Customer> lista = new ArrayList<Customer>();
+                        customerControler.getCustomers(lista);
+                        mensajeOut.setContext("/getCustomersResponse");
+                        session.put("Customer", lista);
+                        mensajeOut.setSession(session);
+                        objectOutputStream.writeObject(mensajeOut);
+                        break;
+    
+                    case "/getCustomer":
+                        int id = (int) session.get("id");
+                        customerControler = new CustomerControler();
+                        Customer cu = customerControler.getCustomer(id);
+                        if (cu != null) {
+                            System.out.println("id:" + cu.getId());
+                        } else {
+                            System.out.println("No encontrado en la base de datos");
+                        }
+    
+                        mensajeOut.setContext("/getCustomerResponse");
+                        session.put("Customer", cu);
+                        mensajeOut.setSession(session);
+                        objectOutputStream.writeObject(mensajeOut);
+                        break;
+    
+                    case "/login":
+                        String emailLogin = (String) session.get("email");
+                        String passwordLogin = (String) session.get("password");
+                        customerControler = new CustomerControler();
+                        Customer cuLogin = customerControler.login(emailLogin, passwordLogin);
+    
+                        mensajeOut.setContext("/loginResponse");
+                        session.remove("password"); // la contraseña no vuelve al cliente
+                        session.put("Customer", cuLogin);
+                        mensajeOut.setSession(session);
+                        objectOutputStream.writeObject(mensajeOut);
+                        break;
+    
+                    case "/registro":
+                        String nombreRegistro = (String) session.get("nombre");
+                        String emailRegistro = (String) session.get("email");
+                        String passwordRegistro = (String) session.get("password");
+                        customerControler = new CustomerControler();
+                        String error = customerControler.registrar(nombreRegistro, emailRegistro, passwordRegistro);
+    
+                        mensajeOut.setContext("/registroResponse");
+                        session.remove("password"); // la contraseña no vuelve al cliente
+                        session.put("exito", error == null);
+                        session.put("error", error);
+                        mensajeOut.setSession(session);
+                        objectOutputStream.writeObject(mensajeOut);
+                        break;
+    
+                    case "/aparcar":
+                        int idAparcar = (int) session.get("idUsuario");
+                        double lat = (double) session.get("latitud");
+                        double lon = (double) session.get("longitud");
+                        customerControler = new CustomerControler();
+                        boolean okAparcar = customerControler.aparcar(idAparcar, lat, lon);
+    
+                        mensajeOut.setContext("/aparcarResponse");
+                        session.put("exito", okAparcar);
+                        mensajeOut.setSession(session);
+                        objectOutputStream.writeObject(mensajeOut);
+                        break;
+    
+                    case "/desaparcar":
+                        int idDesaparcar = (int) session.get("idUsuario");
+                        customerControler = new CustomerControler();
+                        boolean okDesaparcar = customerControler.desaparcar(idDesaparcar);
+    
+                        mensajeOut.setContext("/desaparcarResponse");
+                        session.put("exito", okDesaparcar);
+                        mensajeOut.setSession(session);
+                        objectOutputStream.writeObject(mensajeOut);
+                        break;
+    
+                    case "/getAparcamientos":
+                        customerControler = new CustomerControler();
+                        String aparcamientos = customerControler.getAparcamientos();
+                        mensajeOut.setContext("/getAparcamientosResponse");
+                        session.put("aparcamientos", aparcamientos);
+                        mensajeOut.setSession(session);
+                        objectOutputStream.writeObject(mensajeOut);
+                        break;
+    
+                    case "/getAparcamientoActivo":
+                        int idUsuarioActivo = (int) session.get("idUsuario");
+                        customerControler = new CustomerControler();
+                        Map<String, Object> aparcamientoActivo =
+                                customerControler.getAparcamientoActivo(idUsuarioActivo);
+                        mensajeOut.setContext("/getAparcamientoActivoResponse");
+                        session.putAll(aparcamientoActivo);
+                        mensajeOut.setSession(session);
+                        objectOutputStream.writeObject(mensajeOut);
+                        break;
+    
+                    case "/infoBarrio":
+                        double latBarrio = (double) session.get("latitud");
+                        double lonBarrio = (double) session.get("longitud");
+                        customerControler = new CustomerControler();
+                        // Devuelve barrio, distrito, totalPlazas, plazasVerdes, plazasAzules,
+                        // cochesAparcados y plazasLibres; o solo "error" si no hay plazas SER cerca
+                        HashMap<String, Object> infoBarrio = customerControler.infoBarrio(latBarrio, lonBarrio);
+                        mensajeOut.setContext("/infoBarrioResponse");
+                        session.putAll(infoBarrio);
+                        mensajeOut.setSession(session);
+                        objectOutputStream.writeObject(mensajeOut);
+                        break;
+    
+                    default:
+                        System.out.println("\nParámetro no encontrado");
+                        enviarError(objectOutputStream, "Petición desconocida: " + mensajeIn.getContext());
+                        break;
+                }
+            } catch (RuntimeException ex) {
+                // Si algo falla (por ejemplo la base de datos), avisamos al cliente
+                // en vez de cerrar sin contestar, que el cliente confundiría con "no hay conexión"
+                ex.printStackTrace();
+                enviarError(objectOutputStream, "Error en el servidor: " + ex.getMessage());
             }
 
         } catch (IOException ex) {
@@ -159,6 +180,14 @@ public class SocketServer extends Thread {
                 ex.printStackTrace();
             }
         }
+    }
+
+    // Envía al cliente un mensaje "/errorServidor" con la explicación del fallo
+    private void enviarError(ObjectOutputStream salida, String texto) throws IOException {
+        Message mensajeError = new Message();
+        mensajeError.setContext("/errorServidor");
+        mensajeError.getSession().put("errorServidor", texto);
+        salida.writeObject(mensajeError);
     }
 
     public static void main(String[] args) {
