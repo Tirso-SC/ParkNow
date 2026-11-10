@@ -4,9 +4,13 @@ import icai.dtc.isw.client.Client;
 import icai.dtc.isw.domain.Customer;
 
 import javax.swing.*;
-import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
+import java.awt.event.KeyEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
@@ -15,6 +19,7 @@ import java.net.URLConnection;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -24,6 +29,37 @@ import java.util.regex.Pattern;
 import javax.imageio.ImageIO;
 
 public class JVentana extends JFrame {
+
+    // Colores al estilo Apple: si se cambia uno aquí, cambia en todas las pantallas
+    private static final Color AZUL = new Color(0, 113, 227);
+    private static final Color AZUL_OSCURO = new Color(0, 94, 190);
+    private static final Color FONDO = new Color(245, 245, 247);
+    private static final Color GRIS_BOTON = new Color(232, 232, 237);
+    private static final Color GRIS_BOTON_OSCURO = new Color(218, 218, 224);
+    private static final Color TEXTO = new Color(29, 29, 31);
+    private static final Color TEXTO_SUAVE = new Color(134, 134, 139);
+    private static final Color DESACTIVADO = new Color(238, 238, 240);
+    private static final Color VERDE = new Color(52, 199, 89);
+    private static final Color NARANJA = new Color(255, 149, 0);
+    private static final Color ROJO = new Color(255, 59, 48);
+
+    // Fuente parecida a la de Apple: se usa la primera que esté instalada en el ordenador
+    private static final String FUENTE = elegirFuente();
+
+    private static String elegirFuente() {
+        List<String> instaladas = Arrays.asList(
+                GraphicsEnvironment.getLocalGraphicsEnvironment().getAvailableFontFamilyNames());
+        String[] preferidas = {"SF Pro Text", "Helvetica Neue", "Segoe UI", "Arial"};
+        for (String fuente : preferidas) {
+            if (instaladas.contains(fuente)) {
+                return fuente;
+            }
+        }
+        return "SansSerif";
+    }
+
+    // Tipos de aviso: cada uno tiene su color y su símbolo
+    private enum TipoAviso { ERROR, AVISO, EXITO }
 
     private CardLayout cardLayout;
     private JPanel pnlContenedorPrincipal;
@@ -45,6 +81,7 @@ public class JVentana extends JFrame {
     private JButton btnAparcar;
     private JLabel lblEstadoTexto;
     private JButton btnDesaparcar;
+    private JLabel lblInfoZona;
     private MadridMapPanel mapaMadrid;
 
     // Usuario activo en la sesión
@@ -80,183 +117,139 @@ public class JVentana extends JFrame {
         cardLayout.show(pnlContenedorPrincipal, "PANTALLA_LOGIN");
     }
 
+    // ---------------------------------------------------------------
+    // Pantalla de login
+    // ---------------------------------------------------------------
+
     private JPanel crearPanelLogin() {
-        JPanel pnl = new JPanel();
-        pnl.setLayout(new BoxLayout(pnl, BoxLayout.Y_AXIS));
-        pnl.setBorder(new EmptyBorder(50, 60, 50, 60));
-
-        JLabel lblTitulo = new JLabel("ParkNow");
-        lblTitulo.setFont(new Font("Arial", Font.BOLD, 26));
-        lblTitulo.setAlignmentX(Component.CENTER_ALIGNMENT);
-        pnl.add(lblTitulo);
-        pnl.add(Box.createRigidArea(new Dimension(0, 40)));
-
-        JLabel lblSub = new JLabel("Iniciar sesión");
-        lblSub.setFont(new Font("Arial", Font.PLAIN, 15));
-        lblSub.setAlignmentX(Component.CENTER_ALIGNMENT);
-        pnl.add(lblSub);
-        pnl.add(Box.createRigidArea(new Dimension(0, 10)));
+        JPanel tarjeta = crearTarjetaFormulario("Bienvenido de nuevo", "Inicia sesión para encontrar aparcamiento en Madrid.");
 
         txtCorreo = new JTextField();
-        anadirCampo(pnl, "Correo", txtCorreo);
+        anadirCampo(tarjeta, "Correo electrónico", txtCorreo);
 
         txtPassword = new JPasswordField();
-        anadirCampo(pnl, "Contraseña", txtPassword);
-        pnl.add(Box.createRigidArea(new Dimension(0, 15)));
+        anadirCampo(tarjeta, "Contraseña", txtPassword);
+        tarjeta.add(Box.createVerticalStrut(6));
 
-        JButton btnEntrar = new JButton("Entrar");
-        btnEntrar.setFont(new Font("Arial", Font.BOLD, 14));
-        btnEntrar.setMaximumSize(new Dimension(130, 36));
-        btnEntrar.setPreferredSize(new Dimension(130, 36));
-        btnEntrar.setAlignmentX(Component.CENTER_ALIGNMENT);
+        JButton btnEntrar = crearBoton("Entrar", true);
+        anadirBotonAncho(tarjeta, btnEntrar);
+        btnEntrar.addActionListener(e -> iniciarSesion());
 
-        btnEntrar.addActionListener(e -> {
-            String email = txtCorreo.getText().trim();
-            String password = new String(txtPassword.getPassword());
-            if (email.isEmpty() || password.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Por favor, escribe tu correo y tu contraseña.");
-                return;
-            }
-            if (!email.contains("@") || !email.contains(".")) {
-                JOptionPane.showMessageDialog(this, "Introduce un correo válido.");
-                return;
-            }
+        // Pulsar Enter en cualquiera de los dos campos es lo mismo que pulsar "Entrar"
+        txtCorreo.addActionListener(e -> btnEntrar.doClick());
+        txtPassword.addActionListener(e -> btnEntrar.doClick());
 
-            try {
-                Client cliente = new Client();
-                HashMap<String, Object> session = new HashMap<>();
-                session.put("email", email);
-                session.put("password", password);
-                session = cliente.sentMessage("/login", session);
-
-                usuarioActual = (Customer) session.get("Customer");
-
-                if (usuarioActual != null) {
-                    txtPassword.setText("");
-                    lblSaludo.setText("Hola, " + usuarioActual.getName());
-                    cardLayout.show(pnlContenedorPrincipal, "PANTALLA_APARCAR");
-                    cargarAparcamientosEnMapa();
-                    cargarMiAparcamiento();
-                } else {
-                    JOptionPane.showMessageDialog(this, "Correo o contraseña incorrectos");
-                }
-            } catch (Exception ex) {
-                mostrarError(ex);
-            }
-        });
-
-        pnl.add(btnEntrar);
-        pnl.add(Box.createRigidArea(new Dimension(0, 10)));
-
-        // Botón para ir a la pantalla de registro
-        JButton btnIrRegistro = new JButton("¿No tienes cuenta? Regístrate");
-        btnIrRegistro.setFont(new Font("Arial", Font.PLAIN, 13));
-        btnIrRegistro.setAlignmentX(Component.CENTER_ALIGNMENT);
+        tarjeta.add(Box.createVerticalStrut(14));
+        JButton btnIrRegistro = crearBotonEnlace("¿No tienes cuenta? Regístrate");
         btnIrRegistro.addActionListener(e -> cardLayout.show(pnlContenedorPrincipal, "PANTALLA_REGISTRO"));
-        pnl.add(btnIrRegistro);
+        tarjeta.add(btnIrRegistro);
 
-        return pnl;
+        return centrarEnPantalla(tarjeta);
     }
 
+    private void iniciarSesion() {
+        String email = txtCorreo.getText().trim();
+        String password = new String(txtPassword.getPassword());
+        if (email.isEmpty() || password.isEmpty()) {
+            mostrarAviso(TipoAviso.AVISO, "Faltan datos", "Escribe tu correo y tu contraseña.");
+            return;
+        }
+        if (!email.contains("@") || !email.contains(".")) {
+            mostrarAviso(TipoAviso.AVISO, "Correo no válido", "Revisa que el correo esté bien escrito.");
+            return;
+        }
+
+        try {
+            Client cliente = new Client();
+            HashMap<String, Object> session = new HashMap<>();
+            session.put("email", email);
+            session.put("password", password);
+            session = cliente.sentMessage("/login", session);
+
+            usuarioActual = (Customer) session.get("Customer");
+
+            if (usuarioActual != null) {
+                txtPassword.setText("");
+                lblSaludo.setText("Hola, " + usuarioActual.getName());
+                cardLayout.show(pnlContenedorPrincipal, "PANTALLA_APARCAR");
+                cargarAparcamientosEnMapa();
+                cargarMiAparcamiento();
+            } else {
+                mostrarAviso(TipoAviso.ERROR, "No se ha podido iniciar sesión", "Correo o contraseña incorrectos.");
+            }
+        } catch (Exception ex) {
+            mostrarError(ex);
+        }
+    }
+
+    // ---------------------------------------------------------------
+    // Pantalla de registro
+    // ---------------------------------------------------------------
+
     private JPanel crearPanelRegistro() {
-        JPanel pnl = new JPanel();
-        pnl.setLayout(new BoxLayout(pnl, BoxLayout.Y_AXIS));
-        pnl.setBorder(new EmptyBorder(25, 60, 25, 60));
-
-        JLabel lblTitulo = new JLabel("ParkNow");
-        lblTitulo.setFont(new Font("Arial", Font.BOLD, 26));
-        lblTitulo.setAlignmentX(Component.CENTER_ALIGNMENT);
-        pnl.add(lblTitulo);
-        pnl.add(Box.createRigidArea(new Dimension(0, 15)));
-
-        JLabel lblSub = new JLabel("Crear cuenta");
-        lblSub.setFont(new Font("Arial", Font.PLAIN, 15));
-        lblSub.setAlignmentX(Component.CENTER_ALIGNMENT);
-        pnl.add(lblSub);
-        pnl.add(Box.createRigidArea(new Dimension(0, 10)));
+        JPanel tarjeta = crearTarjetaFormulario("Crear cuenta", "Regístrate en unos segundos y empieza a aparcar.");
 
         txtRegNombre = new JTextField();
-        anadirCampo(pnl, "Nombre", txtRegNombre);
+        anadirCampo(tarjeta, "Nombre", txtRegNombre);
 
         txtRegCorreo = new JTextField();
-        anadirCampo(pnl, "Correo", txtRegCorreo);
+        anadirCampo(tarjeta, "Correo electrónico", txtRegCorreo);
 
         txtRegPassword = new JPasswordField();
-        anadirCampo(pnl, "Contraseña (mínimo 8 caracteres)", txtRegPassword);
+        anadirCampo(tarjeta, "Contraseña (mínimo 8 caracteres)", txtRegPassword);
 
         txtRegPassword2 = new JPasswordField();
-        anadirCampo(pnl, "Repetir contraseña", txtRegPassword2);
-        pnl.add(Box.createRigidArea(new Dimension(0, 5)));
+        anadirCampo(tarjeta, "Repetir contraseña", txtRegPassword2);
+        tarjeta.add(Box.createVerticalStrut(6));
 
-        JButton btnRegistrarme = new JButton("Registrarme");
-        btnRegistrarme.setFont(new Font("Arial", Font.BOLD, 14));
-        btnRegistrarme.setMaximumSize(new Dimension(150, 36));
-        btnRegistrarme.setPreferredSize(new Dimension(150, 36));
-        btnRegistrarme.setAlignmentX(Component.CENTER_ALIGNMENT);
+        JButton btnRegistrarme = crearBoton("Registrarme", true);
+        anadirBotonAncho(tarjeta, btnRegistrarme);
+        btnRegistrarme.addActionListener(e -> registrarse());
+        txtRegPassword2.addActionListener(e -> btnRegistrarme.doClick());
 
-        btnRegistrarme.addActionListener(e -> {
-            String nombre = txtRegNombre.getText().trim();
-            String email = txtRegCorreo.getText().trim();
-            String password = new String(txtRegPassword.getPassword());
-            String password2 = new String(txtRegPassword2.getPassword());
-
-            // Esta comprobación se hace aquí porque el servidor solo recibe una contraseña
-            if (!password.equals(password2)) {
-                JOptionPane.showMessageDialog(this, "Las contraseñas no coinciden.");
-                return;
-            }
-
-            try {
-                Client cliente = new Client();
-                HashMap<String, Object> session = new HashMap<>();
-                session.put("nombre", nombre);
-                session.put("email", email);
-                session.put("password", password);
-                session = cliente.sentMessage("/registro", session);
-
-                boolean exito = (boolean) session.get("exito");
-                if (exito) {
-                    JOptionPane.showMessageDialog(this, "Cuenta creada correctamente. Ya puedes iniciar sesión.");
-                    txtCorreo.setText(email);
-                    limpiarRegistro();
-                    cardLayout.show(pnlContenedorPrincipal, "PANTALLA_LOGIN");
-                } else {
-                    JOptionPane.showMessageDialog(this, (String) session.get("error"));
-                }
-            } catch (Exception ex) {
-                mostrarError(ex);
-            }
-        });
-
-        pnl.add(btnRegistrarme);
-        pnl.add(Box.createRigidArea(new Dimension(0, 10)));
-
-        JButton btnVolver = new JButton("Volver al login");
-        btnVolver.setFont(new Font("Arial", Font.PLAIN, 13));
-        btnVolver.setAlignmentX(Component.CENTER_ALIGNMENT);
+        tarjeta.add(Box.createVerticalStrut(14));
+        JButton btnVolver = crearBotonEnlace("← Ya tengo cuenta, volver al login");
         btnVolver.addActionListener(e -> {
             limpiarRegistro();
             cardLayout.show(pnlContenedorPrincipal, "PANTALLA_LOGIN");
         });
-        pnl.add(btnVolver);
+        tarjeta.add(btnVolver);
 
-        return pnl;
+        return centrarEnPantalla(tarjeta);
     }
 
-    // Añade al panel una etiqueta y debajo su campo de texto, con el mismo estilo que el login
-    private void anadirCampo(JPanel pnl, String texto, JTextField campo) {
-        JLabel lbl = new JLabel(texto);
-        lbl.setFont(new Font("Arial", Font.PLAIN, 13));
-        lbl.setAlignmentX(Component.CENTER_ALIGNMENT);
-        pnl.add(lbl);
-        pnl.add(Box.createRigidArea(new Dimension(0, 4)));
+    private void registrarse() {
+        String nombre = txtRegNombre.getText().trim();
+        String email = txtRegCorreo.getText().trim();
+        String password = new String(txtRegPassword.getPassword());
+        String password2 = new String(txtRegPassword2.getPassword());
 
-        campo.setFont(new Font("Arial", Font.PLAIN, 14));
-        campo.setMaximumSize(new Dimension(300, 35));
-        campo.setPreferredSize(new Dimension(300, 35));
-        campo.setAlignmentX(Component.CENTER_ALIGNMENT);
-        pnl.add(campo);
-        pnl.add(Box.createRigidArea(new Dimension(0, 10)));
+        // Esta comprobación se hace aquí porque el servidor solo recibe una contraseña
+        if (!password.equals(password2)) {
+            mostrarAviso(TipoAviso.AVISO, "Las contraseñas no coinciden", "Escribe la misma contraseña en los dos campos.");
+            return;
+        }
+
+        try {
+            Client cliente = new Client();
+            HashMap<String, Object> session = new HashMap<>();
+            session.put("nombre", nombre);
+            session.put("email", email);
+            session.put("password", password);
+            session = cliente.sentMessage("/registro", session);
+
+            boolean exito = (boolean) session.get("exito");
+            if (exito) {
+                mostrarAviso(TipoAviso.EXITO, "Cuenta creada", "Ya puedes iniciar sesión con tu correo.");
+                txtCorreo.setText(email);
+                limpiarRegistro();
+                cardLayout.show(pnlContenedorPrincipal, "PANTALLA_LOGIN");
+            } else {
+                mostrarAviso(TipoAviso.ERROR, "No se ha podido crear la cuenta", (String) session.get("error"));
+            }
+        } catch (Exception ex) {
+            mostrarError(ex);
+        }
     }
 
     // Vacía los campos de la pantalla de registro
@@ -267,81 +260,205 @@ public class JVentana extends JFrame {
         txtRegPassword2.setText("");
     }
 
-    private JPanel crearPanelAparcar() {
-        Color fondo = new Color(246, 247, 249);
-        Color azul = new Color(30, 96, 220);
-        JPanel pnl = new JPanel(new BorderLayout(18, 18));
-        pnl.setBackground(fondo);
-        pnl.setBorder(new EmptyBorder(24, 28, 24, 28));
+    // ---------------------------------------------------------------
+    // Piezas reutilizables para login y registro
+    // ---------------------------------------------------------------
 
+    // Crea la tarjeta blanca redondeada del formulario con el logo, el título y una frase debajo
+    private JPanel crearTarjetaFormulario(String titulo, String subtitulo) {
+        PanelRedondeado tarjeta = new PanelRedondeado(Color.WHITE, 24);
+        tarjeta.setLayout(new BoxLayout(tarjeta, BoxLayout.Y_AXIS));
+        tarjeta.setBorder(new EmptyBorder(36, 40, 32, 40));
+
+        tarjeta.add(crearLogo());
+        tarjeta.add(Box.createVerticalStrut(28));
+
+        JLabel lblTitulo = new JLabel(titulo);
+        lblTitulo.setFont(new Font(FUENTE, Font.BOLD, 24));
+        lblTitulo.setForeground(TEXTO);
+        lblTitulo.setAlignmentX(Component.LEFT_ALIGNMENT);
+        tarjeta.add(lblTitulo);
+        tarjeta.add(Box.createVerticalStrut(6));
+
+        JLabel lblSub = new JLabel(subtitulo);
+        lblSub.setFont(new Font(FUENTE, Font.PLAIN, 14));
+        lblSub.setForeground(TEXTO_SUAVE);
+        lblSub.setAlignmentX(Component.LEFT_ALIGNMENT);
+        tarjeta.add(lblSub);
+        tarjeta.add(Box.createVerticalStrut(24));
+        return tarjeta;
+    }
+
+    // Logo: un cuadrado azul redondeado con una "P" (como el icono de una app) y el nombre al lado
+    private JPanel crearLogo() {
+        JPanel fila = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        fila.setOpaque(false);
+        fila.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        PanelRedondeado icono = new PanelRedondeado(AZUL, 12);
+        icono.setLayout(new GridBagLayout());
+        icono.setPreferredSize(new Dimension(38, 38));
+        JLabel letra = new JLabel("P");
+        letra.setFont(new Font(FUENTE, Font.BOLD, 21));
+        letra.setForeground(Color.WHITE);
+        icono.add(letra);
+
+        JLabel nombre = new JLabel("ParkNow");
+        nombre.setFont(new Font(FUENTE, Font.BOLD, 22));
+        nombre.setForeground(TEXTO);
+
+        fila.add(icono);
+        fila.add(Box.createHorizontalStrut(10));
+        fila.add(nombre);
+        fila.setMaximumSize(new Dimension(Integer.MAX_VALUE, 38));
+        return fila;
+    }
+
+    // Pone la tarjeta en el centro de la ventana sobre el fondo gris claro
+    private JPanel centrarEnPantalla(JPanel tarjeta) {
+        JPanel fondo = new JPanel(new GridBagLayout()); // GridBagLayout centra solo a su único hijo
+        fondo.setBackground(FONDO);
+        fondo.add(tarjeta);
+        return fondo;
+    }
+
+    // Añade al formulario una etiqueta y debajo su campo de texto (dentro de una caja gris redondeada)
+    private void anadirCampo(JPanel pnl, String texto, JTextField campo) {
+        JLabel lbl = new JLabel(texto);
+        lbl.setFont(new Font(FUENTE, Font.BOLD, 12));
+        lbl.setForeground(TEXTO);
+        lbl.setAlignmentX(Component.LEFT_ALIGNMENT);
+        pnl.add(lbl);
+        pnl.add(Box.createVerticalStrut(6));
+
+        JPanel caja = crearCajaCampo(campo, FONDO);
+        caja.setPreferredSize(new Dimension(320, 42));
+        caja.setMaximumSize(new Dimension(Integer.MAX_VALUE, 42));
+        caja.setAlignmentX(Component.LEFT_ALIGNMENT);
+        pnl.add(caja);
+        pnl.add(Box.createVerticalStrut(14));
+    }
+
+    // Botón que ocupa todo el ancho del formulario
+    private void anadirBotonAncho(JPanel pnl, JButton boton) {
+        boton.setAlignmentX(Component.LEFT_ALIGNMENT);
+        boton.setMaximumSize(new Dimension(Integer.MAX_VALUE, 42));
+        pnl.add(boton);
+    }
+
+    // Botón sin fondo ni borde, que parece un enlace azul
+    private JButton crearBotonEnlace(String texto) {
+        JButton boton = new JButton(texto);
+        boton.setFont(new Font(FUENTE, Font.PLAIN, 13));
+        boton.setForeground(AZUL);
+        boton.setContentAreaFilled(false);
+        boton.setBorderPainted(false);
+        boton.setFocusPainted(false);
+        boton.setBorder(new EmptyBorder(0, 0, 0, 0));
+        boton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        boton.setAlignmentX(Component.LEFT_ALIGNMENT);
+        return boton;
+    }
+
+    // ---------------------------------------------------------------
+    // Pantalla principal: mapa + panel lateral
+    // ---------------------------------------------------------------
+
+    private JPanel crearPanelAparcar() {
+        JPanel pnl = new JPanel(new BorderLayout(18, 18));
+        pnl.setBackground(FONDO);
+        pnl.setBorder(new EmptyBorder(20, 28, 24, 28));
+
+        // Cabecera: logo y saludo a la izquierda, botón de cerrar sesión a la derecha
         JPanel cabecera = new JPanel(new BorderLayout());
         cabecera.setOpaque(false);
         JPanel textos = new JPanel();
         textos.setOpaque(false);
         textos.setLayout(new BoxLayout(textos, BoxLayout.Y_AXIS));
-        JLabel marca = new JLabel("ParkNow");
-        marca.setFont(new Font("Arial", Font.BOLD, 25));
-        marca.setForeground(new Color(24, 28, 38));
+        textos.add(crearLogo());
+        textos.add(Box.createVerticalStrut(6));
         lblSaludo = new JLabel("Hola");
-        lblSaludo.setFont(new Font("Arial", Font.PLAIN, 14));
-        lblSaludo.setForeground(new Color(105, 110, 122));
-        textos.add(marca);
-        textos.add(Box.createVerticalStrut(4));
+        lblSaludo.setFont(new Font(FUENTE, Font.PLAIN, 14));
+        lblSaludo.setForeground(TEXTO_SUAVE);
+        lblSaludo.setAlignmentX(Component.LEFT_ALIGNMENT);
         textos.add(lblSaludo);
         cabecera.add(textos, BorderLayout.WEST);
-        JLabel ciudad = new JLabel("MADRID  ·  MAPA EN TIEMPO REAL");
-        ciudad.setFont(new Font("Arial", Font.BOLD, 11));
-        ciudad.setForeground(new Color(105, 110, 122));
-        cabecera.add(ciudad, BorderLayout.EAST);
+
+        JPanel derecha = new JPanel(new FlowLayout(FlowLayout.RIGHT, 12, 6));
+        derecha.setOpaque(false);
+        JLabel ciudad = new JLabel("Madrid · Mapa en tiempo real");
+        ciudad.setFont(new Font(FUENTE, Font.PLAIN, 13));
+        ciudad.setForeground(TEXTO_SUAVE);
+        JButton btnCerrarSesion = crearBoton("Cerrar sesión", false);
+        btnCerrarSesion.addActionListener(e -> cerrarSesion());
+        derecha.add(ciudad);
+        derecha.add(btnCerrarSesion);
+        cabecera.add(derecha, BorderLayout.EAST);
         pnl.add(cabecera, BorderLayout.NORTH);
 
+        // Mapa dentro de una tarjeta blanca redondeada, con los botones de zoom debajo
         mapaMadrid = new MadridMapPanel();
-        JPanel mapaConControles = new JPanel(new BorderLayout());
-        mapaConControles.setBackground(Color.WHITE);
-        mapaConControles.setBorder(BorderFactory.createLineBorder(new Color(224, 227, 233)));
+        PanelRedondeado mapaConControles = new PanelRedondeado(Color.WHITE, 24);
+        mapaConControles.setLayout(new BorderLayout());
+        mapaConControles.setBorder(new EmptyBorder(8, 8, 0, 8));
         mapaConControles.add(mapaMadrid, BorderLayout.CENTER);
         JPanel controlesMapa = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 8));
-        controlesMapa.setBackground(Color.WHITE);
-        JButton btnMenosZoom = crearBoton("-", false);
+        controlesMapa.setOpaque(false);
+        JButton btnMenosZoom = crearBoton("−", false);
         JButton btnMasZoom = crearBoton("+", false);
         JButton btnCentrarMapa = crearBoton("Centrar Madrid", false);
+        btnMenosZoom.setToolTipText("Alejar");
+        btnMasZoom.setToolTipText("Acercar");
         btnMenosZoom.addActionListener(e -> mapaMadrid.cambiarZoom(-1));
         btnMasZoom.addActionListener(e -> mapaMadrid.cambiarZoom(1));
         btnCentrarMapa.addActionListener(e -> mapaMadrid.centrar());
         controlesMapa.add(btnMenosZoom);
         controlesMapa.add(btnMasZoom);
         controlesMapa.add(btnCentrarMapa);
-        JLabel ayuda = new JLabel("Pulsa en el mapa para elegir tu plaza");
-        ayuda.setFont(new Font("Arial", Font.PLAIN, 12));
-        ayuda.setForeground(new Color(115, 120, 130));
+        JLabel ayuda = new JLabel("Haz clic para elegir un punto · Arrastra para moverte · Rueda para hacer zoom");
+        ayuda.setFont(new Font(FUENTE, Font.PLAIN, 12));
+        ayuda.setForeground(TEXTO_SUAVE);
         controlesMapa.add(Box.createHorizontalStrut(8));
         controlesMapa.add(ayuda);
         mapaConControles.add(controlesMapa, BorderLayout.SOUTH);
         pnl.add(mapaConControles, BorderLayout.CENTER);
 
-        JPanel lateral = new JPanel();
+        // Panel lateral: tarjeta blanca redondeada con secciones grises dentro
+        PanelRedondeado lateral = new PanelRedondeado(Color.WHITE, 24);
         lateral.setLayout(new BoxLayout(lateral, BoxLayout.Y_AXIS));
-        lateral.setBackground(Color.WHITE);
-        lateral.setBorder(new EmptyBorder(20, 18, 20, 18));
-        lateral.setPreferredSize(new Dimension(285, 0));
+        lateral.setBorder(new EmptyBorder(22, 18, 20, 18));
+        lateral.setPreferredSize(new Dimension(300, 0));
 
         JLabel titulo = new JLabel("Tu aparcamiento");
-        titulo.setFont(new Font("Arial", Font.BOLD, 19));
-        titulo.setForeground(new Color(24, 28, 38));
+        titulo.setFont(new Font(FUENTE, Font.BOLD, 21));
+        titulo.setForeground(TEXTO);
         titulo.setAlignmentX(Component.LEFT_ALIGNMENT);
         lateral.add(titulo);
-        JLabel descripcion = new JLabel("<html>Selecciona una posición y<br>confirma dónde has dejado el coche.</html>");
-        descripcion.setFont(new Font("Arial", Font.PLAIN, 13));
-        descripcion.setForeground(new Color(105, 110, 122));
+        JLabel descripcion = new JLabel("<html>Selecciona una posición en el mapa y<br>confirma dónde has dejado el coche.</html>");
+        descripcion.setFont(new Font(FUENTE, Font.PLAIN, 13));
+        descripcion.setForeground(TEXTO_SUAVE);
         descripcion.setAlignmentX(Component.LEFT_ALIGNMENT);
-        lateral.add(Box.createVerticalStrut(7));
+        lateral.add(Box.createVerticalStrut(6));
         lateral.add(descripcion);
-        lateral.add(Box.createVerticalStrut(22));
+        lateral.add(Box.createVerticalStrut(18));
 
+        // 1) Estado actual (lo primero, porque es lo que más interesa al usuario)
+        JPanel estado = crearTarjeta("Estado actual");
+        lblEstadoTexto = new JLabel();
+        lblEstadoTexto.setFont(new Font(FUENTE, Font.PLAIN, 13));
+        estado.add(lblEstadoTexto, BorderLayout.CENTER);
+        // Botón "destructivo" al estilo Apple: texto rojo sobre blanco
+        btnDesaparcar = new BotonRedondeado("Ya me he marchado", Color.WHITE, new Color(255, 236, 235), ROJO);
+        estado.add(btnDesaparcar, BorderLayout.SOUTH);
+        btnDesaparcar.addActionListener(e -> desaparcar());
+        lateral.add(estado);
+        lateral.add(Box.createVerticalStrut(12));
+
+        // 2) Ubicación seleccionada y botones de acción
         JPanel ubicacion = crearTarjeta("Ubicación seleccionada");
-        txtLatitud = crearCampo("40.41680");
-        txtLongitud = crearCampo("-3.70380");
-        JPanel coordenadas = new JPanel(new GridLayout(2, 1, 0, 8));
+        txtLatitud = new JTextField("40.41680");
+        txtLongitud = new JTextField("-3.70380");
+        JPanel coordenadas = new JPanel(new GridLayout(1, 2, 8, 0));
         coordenadas.setOpaque(false);
         coordenadas.add(crearCampoConEtiqueta("Latitud", txtLatitud));
         coordenadas.add(crearCampoConEtiqueta("Longitud", txtLongitud));
@@ -350,85 +467,196 @@ public class JVentana extends JFrame {
 
         btnAparcar = crearBoton("He aparcado aquí", true);
         btnAparcar.setAlignmentX(Component.LEFT_ALIGNMENT);
-        lateral.add(Box.createVerticalStrut(14));
+        btnAparcar.setMaximumSize(new Dimension(Integer.MAX_VALUE, 42));
+        lateral.add(Box.createVerticalStrut(12));
         lateral.add(btnAparcar);
         btnAparcar.addActionListener(e -> aparcarEnUbicacionSeleccionada());
 
         // Botón para consultar las plazas SER del barrio del punto seleccionado en el mapa
-        JButton btnVerPlazas = crearBoton("🔍 Ver plazas de esta zona", false);
+        JButton btnVerPlazas = crearBoton("Ver plazas de esta zona", false);
         btnVerPlazas.setAlignmentX(Component.LEFT_ALIGNMENT);
+        btnVerPlazas.setMaximumSize(new Dimension(Integer.MAX_VALUE, 42));
         lateral.add(Box.createVerticalStrut(8));
         lateral.add(btnVerPlazas);
         btnVerPlazas.addActionListener(e -> verPlazasDeLaZona());
+        lateral.add(Box.createVerticalStrut(12));
 
-        JPanel estado = crearTarjeta("Estado actual");
-        lblEstadoTexto = new JLabel("No hay ningún vehículo aparcado.");
-        lblEstadoTexto.setFont(new Font("Arial", Font.PLAIN, 13));
-        estado.add(lblEstadoTexto, BorderLayout.CENTER);
-        lateral.add(Box.createVerticalStrut(18));
-        lateral.add(estado);
+        // 3) Información de la zona: aquí se muestra el resultado de "Ver plazas de esta zona"
+        JPanel zona = crearTarjeta("Información de la zona");
+        zona.setMaximumSize(new Dimension(Integer.MAX_VALUE, 240));
+        lblInfoZona = new JLabel();
+        lblInfoZona.setFont(new Font(FUENTE, Font.PLAIN, 12));
+        lblInfoZona.setVerticalAlignment(SwingConstants.TOP);
+        zona.add(lblInfoZona, BorderLayout.CENTER);
+        lateral.add(zona);
+        lateral.add(Box.createVerticalGlue());
+        reiniciarInfoZona();
 
-        btnDesaparcar = crearBoton("Ya me he marchado", false);
-        btnDesaparcar.setEnabled(false);
-        estado.add(btnDesaparcar, BorderLayout.SOUTH);
-        btnDesaparcar.addActionListener(e -> desaparcar());
         pnl.add(lateral, BorderLayout.EAST);
 
         mapaMadrid.setClickListener((lat, lon) -> {
+            // Mientras estás aparcado el coche se queda donde está
+            if (estaAparcado) {
+                return;
+            }
+            mapaMadrid.setMyCar(lat, lon);
             txtLatitud.setText(String.format(Locale.US, "%.5f", lat));
             txtLongitud.setText(String.format(Locale.US, "%.5f", lon));
         });
+        actualizarEstadoVisual();
         return pnl;
     }
 
+    // Sección gris redondeada con un título pequeño en mayúsculas (como en los Ajustes del iPhone)
     private JPanel crearTarjeta(String titulo) {
-        JPanel tarjeta = new JPanel(new BorderLayout(0, 10));
-        tarjeta.setBackground(new Color(247, 248, 250));
-        tarjeta.setBorder(new CompoundBorder(
-                BorderFactory.createLineBorder(new Color(232, 234, 239)),
-                new EmptyBorder(13, 12, 13, 12)));
+        PanelRedondeado tarjeta = new PanelRedondeado(FONDO, 16);
+        tarjeta.setLayout(new BorderLayout(0, 10));
+        tarjeta.setBorder(new EmptyBorder(13, 14, 14, 14));
         tarjeta.setAlignmentX(Component.LEFT_ALIGNMENT);
         tarjeta.setMaximumSize(new Dimension(Integer.MAX_VALUE, 150));
 
-        JLabel etiqueta = new JLabel(titulo);
-        etiqueta.setFont(new Font("Arial", Font.BOLD, 12));
-        etiqueta.setForeground(new Color(45, 50, 60));
+        JLabel etiqueta = new JLabel(titulo.toUpperCase());
+        etiqueta.setFont(new Font(FUENTE, Font.BOLD, 11));
+        etiqueta.setForeground(TEXTO_SUAVE);
         tarjeta.add(etiqueta, BorderLayout.NORTH);
         return tarjeta;
     }
 
     private JPanel crearCampoConEtiqueta(String etiqueta, JTextField campo) {
-        JPanel grupo = new JPanel(new BorderLayout(0, 3));
+        JPanel grupo = new JPanel(new BorderLayout(0, 4));
         grupo.setOpaque(false);
         JLabel titulo = new JLabel(etiqueta);
-        titulo.setFont(new Font("Arial", Font.PLAIN, 11));
-        titulo.setForeground(new Color(105, 110, 122));
+        titulo.setFont(new Font(FUENTE, Font.PLAIN, 11));
+        titulo.setForeground(TEXTO_SUAVE);
         grupo.add(titulo, BorderLayout.NORTH);
-        grupo.add(campo, BorderLayout.CENTER);
+        grupo.add(crearCajaCampo(campo, Color.WHITE), BorderLayout.CENTER);
         return grupo;
     }
 
-    private JTextField crearCampo(String valor) {
-        JTextField campo = new JTextField(valor);
-        campo.setFont(new Font("Arial", Font.PLAIN, 13));
-        campo.setMaximumSize(new Dimension(Integer.MAX_VALUE, 34));
-        campo.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(220, 223, 229)),
-                new EmptyBorder(7, 9, 7, 9)));
-        return campo;
+    // Mete el campo de texto dentro de una caja redondeada; el borde se pone azul al escribir
+    private JPanel crearCajaCampo(JTextField campo, Color fondo) {
+        PanelRedondeado caja = new PanelRedondeado(fondo, 12);
+        caja.setLayout(new BorderLayout());
+        caja.setBorder(new EmptyBorder(0, 10, 0, 10));
+
+        campo.setFont(new Font(FUENTE, Font.PLAIN, 14));
+        campo.setForeground(TEXTO);
+        campo.setCaretColor(AZUL);
+        campo.setOpaque(false); // el fondo lo pinta la caja redondeada
+        campo.setBorder(new EmptyBorder(8, 0, 8, 0));
+        campo.addFocusListener(new FocusAdapter() {
+            @Override
+            public void focusGained(FocusEvent e) {
+                caja.setColorBorde(AZUL);
+            }
+
+            @Override
+            public void focusLost(FocusEvent e) {
+                caja.setColorBorde(null);
+            }
+        });
+        caja.add(campo, BorderLayout.CENTER);
+        return caja;
     }
 
+    // Botón azul (principal) o gris con texto azul (secundario), como los de Apple
     private JButton crearBoton(String texto, boolean principal) {
-        JButton boton = new JButton(texto);
-        boton.setFont(new Font("Arial", Font.BOLD, 13));
-        boton.setFocusPainted(false);
-        boton.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        boton.setBackground(principal ? new Color(30, 96, 220) : Color.WHITE);
-        boton.setForeground(principal ? Color.WHITE : new Color(45, 50, 60));
-        boton.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(principal ? new Color(30, 96, 220) : new Color(220, 223, 229)),
-                new EmptyBorder(8, 13, 8, 13)));
-        return boton;
+        if (principal) {
+            return new BotonRedondeado(texto, AZUL, AZUL_OSCURO, Color.WHITE);
+        }
+        return new BotonRedondeado(texto, GRIS_BOTON, GRIS_BOTON_OSCURO, AZUL);
+    }
+
+    // Vuelve a la pantalla de login y olvida los datos del usuario
+    private void cerrarSesion() {
+        usuarioActual = null;
+        estaAparcado = false;
+        horaAparcado = "";
+        mapaMadrid.setMyCar(null, null);
+        reiniciarInfoZona();
+        actualizarEstadoVisual();
+        txtPassword.setText("");
+        cardLayout.show(pnlContenedorPrincipal, "PANTALLA_LOGIN");
+    }
+
+    private void reiniciarInfoZona() {
+        lblInfoZona.setText("<html><div style='width:175px'><font color='#86868b'>"
+                + "Elige un punto en el mapa y pulsa <b>Ver plazas de esta zona</b> "
+                + "para saber cuántas plazas libres hay cerca.</font></div></html>");
+    }
+
+    // ---------------------------------------------------------------
+    // Avisos y errores al estilo Apple (sustituyen a JOptionPane)
+    // ---------------------------------------------------------------
+
+    // Muestra una ventanita centrada con un icono de color, un título, el mensaje y un botón "Aceptar"
+    private void mostrarAviso(TipoAviso tipo, String titulo, String mensaje) {
+        Color color;
+        String simbolo;
+        if (tipo == TipoAviso.ERROR) {
+            color = ROJO;
+            simbolo = "!";
+        } else if (tipo == TipoAviso.AVISO) {
+            color = NARANJA;
+            simbolo = "!";
+        } else {
+            color = VERDE;
+            simbolo = "✓";
+        }
+
+        JDialog dialogo = new JDialog(this, true);
+        dialogo.setUndecorated(true);
+        dialogo.setBackground(new Color(0, 0, 0, 0)); // transparente, para que se vean las esquinas redondeadas
+
+        PanelRedondeado caja = new PanelRedondeado(Color.WHITE, 26);
+        caja.setColorBorde(new Color(0, 0, 0, 45));
+        caja.setLayout(new BoxLayout(caja, BoxLayout.Y_AXIS));
+        caja.setBorder(new EmptyBorder(24, 28, 20, 28));
+
+        // Icono: círculo de color con el símbolo en blanco
+        PanelRedondeado icono = new PanelRedondeado(color, 46);
+        icono.setLayout(new GridBagLayout());
+        icono.setPreferredSize(new Dimension(46, 46));
+        icono.setMaximumSize(new Dimension(46, 46));
+        icono.setAlignmentX(Component.CENTER_ALIGNMENT);
+        JLabel lblSimbolo = new JLabel(simbolo);
+        lblSimbolo.setFont(new Font(Font.DIALOG, Font.BOLD, 24)); // Dialog sí tiene el símbolo ✓ en todos los sistemas
+        lblSimbolo.setForeground(Color.WHITE);
+        icono.add(lblSimbolo);
+        caja.add(icono);
+        caja.add(Box.createVerticalStrut(14));
+
+        JLabel lblTitulo = new JLabel(titulo);
+        lblTitulo.setFont(new Font(FUENTE, Font.BOLD, 15));
+        lblTitulo.setForeground(TEXTO);
+        lblTitulo.setAlignmentX(Component.CENTER_ALIGNMENT);
+        caja.add(lblTitulo);
+        caja.add(Box.createVerticalStrut(6));
+
+        // Se escapan los caracteres < y > para que el mensaje no se interprete como HTML
+        String texto = mensaje == null ? "" : mensaje.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
+        JLabel lblMensaje = new JLabel("<html><div style='width:220px; text-align:center'>" + texto + "</div></html>");
+        lblMensaje.setFont(new Font(FUENTE, Font.PLAIN, 13));
+        lblMensaje.setForeground(TEXTO_SUAVE);
+        lblMensaje.setAlignmentX(Component.CENTER_ALIGNMENT);
+        caja.add(lblMensaje);
+        caja.add(Box.createVerticalStrut(20));
+
+        JButton btnAceptar = crearBoton("Aceptar", true);
+        btnAceptar.setAlignmentX(Component.CENTER_ALIGNMENT);
+        btnAceptar.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
+        btnAceptar.addActionListener(e -> dialogo.dispose());
+        caja.add(btnAceptar);
+
+        // Enter o Escape también cierran el aviso
+        dialogo.getRootPane().setDefaultButton(btnAceptar);
+        dialogo.getRootPane().registerKeyboardAction(e -> dialogo.dispose(),
+                KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), JComponent.WHEN_IN_FOCUSED_WINDOW);
+
+        dialogo.setContentPane(caja);
+        dialogo.pack();
+        dialogo.setLocationRelativeTo(this);
+        dialogo.setVisible(true); // al ser modal, el programa espera aquí hasta que se cierra
     }
 
     private void aparcarEnUbicacionSeleccionada() {
@@ -449,12 +677,12 @@ public class JVentana extends JFrame {
                 cargarAparcamientosEnMapa();
             } else if (session.get("error") != null) {
                 // El servidor explica por qué no se puede aparcar (por ejemplo, el punto no está en una calle)
-                JOptionPane.showMessageDialog(this, (String) session.get("error"));
+                mostrarAviso(TipoAviso.AVISO, "No puedes aparcar aquí", (String) session.get("error"));
             } else {
-                JOptionPane.showMessageDialog(this, "No se ha podido registrar el aparcamiento.");
+                mostrarAviso(TipoAviso.ERROR, "Algo ha ido mal", "No se ha podido registrar el aparcamiento.");
             }
         } catch (NumberFormatException ex) {
-            JOptionPane.showMessageDialog(this, "Introduce coordenadas numéricas válidas.");
+            mostrarAviso(TipoAviso.AVISO, "Coordenadas no válidas", "Introduce coordenadas numéricas válidas.");
         } catch (Exception ex) {
             mostrarError(ex);
         }
@@ -463,11 +691,11 @@ public class JVentana extends JFrame {
     // Muestra el motivo del fallo: o no hay conexión con el servidor, o el servidor ha tenido un error
     private void mostrarError(Exception ex) {
         String motivo = ex.getMessage() != null ? ex.getMessage() : "Error desconocido.";
-        JOptionPane.showMessageDialog(this, motivo, "Error", JOptionPane.ERROR_MESSAGE);
+        mostrarAviso(TipoAviso.ERROR, "Algo ha ido mal", motivo);
     }
 
     // Pide al servidor la información SER del barrio de las coordenadas seleccionadas
-    // (las que se rellenan al pulsar en el mapa) y la muestra en una ventana
+    // (las que se rellenan al pulsar en el mapa) y la muestra en la tarjeta "Información de la zona"
     private void verPlazasDeLaZona() {
         try {
             double lat = Double.parseDouble(txtLatitud.getText().trim());
@@ -479,21 +707,25 @@ public class JVentana extends JFrame {
 
             // Si el servidor devuelve "error" es que no hay plazas SER cerca
             if (session.get("error") != null) {
-                JOptionPane.showMessageDialog(this, "Esta zona no tiene plazas reguladas (SER) registradas.");
+                lblInfoZona.setText("<html><div style='width:175px'>"
+                        + "Esta zona no tiene plazas reguladas (SER) registradas.</div></html>");
                 return;
             }
 
-            String mensaje = "Barrio: " + session.get("barrio") + " (" + session.get("distrito") + ")\n"
-                    + "Plazas SER: " + session.get("totalPlazas")
-                    + " (" + session.get("plazasVerdes") + " verdes, "
-                    + session.get("plazasAzules") + " azules, "
-                    + session.get("plazasOtras") + " de otros colores)\n"
-                    + "Coches de ParkNow aparcados ahora: " + session.get("cochesAparcados") + "\n"
-                    + "Plazas libres estimadas: " + session.get("plazasLibres") + "\n\n"
-                    + "(Estimación basada en datos del Ayuntamiento y en los usuarios de ParkNow)";
-            JOptionPane.showMessageDialog(this, mensaje, "Plazas de esta zona", JOptionPane.INFORMATION_MESSAGE);
+            // Se usa HTML dentro del JLabel para poder poner negritas, colores y saltos de línea
+            lblInfoZona.setText("<html><div style='width:175px'>"
+                    + "<b>" + session.get("barrio") + "</b> <font color='#86868b'>(" + session.get("distrito") + ")</font>"
+                    + "<br><br><font size='+2' color='#34c759'><b>" + session.get("plazasLibres") + "</b></font>"
+                    + " plazas libres estimadas"
+                    + "<br><br>Plazas SER: <b>" + session.get("totalPlazas") + "</b>"
+                    + "<br><font color='#34c759'>●</font> " + session.get("plazasVerdes") + " verdes"
+                    + " &nbsp; <font color='#0071e3'>●</font> " + session.get("plazasAzules") + " azules"
+                    + " &nbsp; <font color='#86868b'>●</font> " + session.get("plazasOtras") + " otras"
+                    + "<br>Coches de ParkNow ahora: <b>" + session.get("cochesAparcados") + "</b>"
+                    + "<br><br><font color='#86868b' size='-1'>Estimación basada en datos del Ayuntamiento "
+                    + "y en los usuarios de ParkNow.</font></div></html>");
         } catch (NumberFormatException ex) {
-            JOptionPane.showMessageDialog(this, "Introduce coordenadas numéricas válidas.");
+            mostrarAviso(TipoAviso.AVISO, "Coordenadas no válidas", "Introduce coordenadas numéricas válidas.");
         } catch (Exception ex) {
             // Si el servidor no responde o falla, avisamos pero la aplicación sigue abierta
             mostrarError(ex);
@@ -512,7 +744,7 @@ public class JVentana extends JFrame {
                 actualizarEstadoVisual();
                 cargarAparcamientosEnMapa();
             } else {
-                JOptionPane.showMessageDialog(this, "No se ha podido liberar la plaza.");
+                mostrarAviso(TipoAviso.ERROR, "Algo ha ido mal", "No se ha podido liberar la plaza.");
             }
         } catch (Exception ex) {
             mostrarError(ex);
@@ -545,13 +777,15 @@ public class JVentana extends JFrame {
 
     private void actualizarEstadoVisual() {
         if (estaAparcado) {
-            lblEstadoTexto.setText("<html>Aparcado desde las <b>" + horaAparcado + "</b> &nbsp;&nbsp;<font color='green'>[Activo]</font></html>");
+            lblEstadoTexto.setText("<html><font color='#34c759'>●</font> <b>Aparcado</b> desde las <b>"
+                    + horaAparcado + "</b><br><font color='#86868b'>Pulsa el botón cuando te vayas.</font></html>");
             btnAparcar.setEnabled(false);
             btnDesaparcar.setEnabled(true);
             txtLatitud.setEnabled(false);
             txtLongitud.setEnabled(false);
         } else {
-            lblEstadoTexto.setText("No hay ningún vehículo aparcado.");
+            lblEstadoTexto.setText("<html><font color='#c7c7cc'>●</font> No hay ningún vehículo aparcado."
+                    + "<br><font color='#86868b'>Elige un punto en el mapa.</font></html>");
             btnAparcar.setEnabled(true);
             btnDesaparcar.setEnabled(false);
             txtLatitud.setEnabled(true);
@@ -620,9 +854,9 @@ public class JVentana extends JFrame {
             iconoLibre = cargarIcono("/markers/parking_libre.png");
             iconoOcupada = cargarIcono("/markers/parking_ocupado.png");
             iconoMio = cargarIcono("/markers/mi_parking.png");
-            setPreferredSize(new Dimension(760, 560));
+            setPreferredSize(new Dimension(640, 470));
             setMinimumSize(new Dimension(620, 420));
-            setBorder(BorderFactory.createLineBorder(new Color(150, 180, 210)));
+            setOpaque(false); // las esquinas quedan transparentes para que el mapa se vea redondeado
             setToolTipText("Pulsa en el mapa para elegir una coordenada");
             setBackground(new Color(238, 241, 238));
             java.awt.event.MouseAdapter raton = new java.awt.event.MouseAdapter() {
@@ -650,7 +884,6 @@ public class JVentana extends JFrame {
                     if (e.getClickCount() == 1 && clickListener != null) {
                         double lon = longitudDesdeX(e.getX());
                         double lat = latitudDesdeY(e.getY());
-                        setMyCar(lat, lon);
                         clickListener.clicked(lat, lon);
                     }
                 }
@@ -818,15 +1051,16 @@ public class JVentana extends JFrame {
         @Override
         protected void paintComponent(Graphics graphics) {
             super.paintComponent(graphics);
-            Graphics2D g = (Graphics2D) graphics;
+            Graphics2D g = (Graphics2D) graphics.create();
+            // Todo lo que se dibuje a partir de aquí queda recortado con las esquinas redondeadas
+            g.clip(new java.awt.geom.RoundRectangle2D.Double(0, 0, getWidth(), getHeight(), 18, 18));
             g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
             dibujarTeselas(g);
 
-            g.setColor(new Color(80, 80, 80));
             g.setColor(new Color(0, 0, 0, 170));
-            g.fillRoundRect(8, 8, 145, 26, 8, 8);
+            g.fillRoundRect(8, 8, 110, 26, 8, 8);
             g.setColor(Color.WHITE);
-            g.drawString("Madrid · nivel " + nivelTeselas(), 16, 26);
+            g.drawString("Zoom " + (int) zoom + " de 5", 16, 26);
             g.setColor(new Color(50, 50, 50));
             g.drawString("© OpenStreetMap contributors", 8, getHeight() - 8);
             for (ParkingMarker marker : markers) {
@@ -852,6 +1086,7 @@ public class JVentana extends JFrame {
                 dibujarCoche(g, x, y, true);
             }
             dibujarLeyenda(g);
+            g.dispose();
         }
 
         private void dibujarCoche(Graphics2D g, int x, int y, boolean esMio) {
@@ -871,9 +1106,10 @@ public class JVentana extends JFrame {
             int x = getWidth() - 172;
             int y = 8;
             g.setColor(new Color(255, 255, 255, 225));
-            g.fillRoundRect(x, y, 164, 67, 10, 10);
-            g.setColor(new Color(70, 70, 70));
-            g.drawRoundRect(x, y, 164, 67, 10, 10);
+            g.fillRoundRect(x, y, 164, 67, 16, 16);
+            g.setColor(new Color(0, 0, 0, 30));
+            g.drawRoundRect(x, y, 164, 67, 16, 16);
+            g.setColor(TEXTO);
             g.setFont(g.getFont().deriveFont(Font.BOLD, 11f));
             g.drawString("Estado de las plazas", x + 10, y + 15);
             g.setFont(g.getFont().deriveFont(Font.PLAIN, 11f));
@@ -889,6 +1125,88 @@ public class JVentana extends JFrame {
             g.fillRoundRect(x + 11, y + 43, 12, 12, 3, 3);
             g.setColor(Color.DARK_GRAY);
             g.drawString("Libre", x + 30, y + 53);
+        }
+    }
+
+    // Panel con las esquinas redondeadas: se usa para las tarjetas, las cajas de texto y los iconos
+    private static class PanelRedondeado extends JPanel {
+        private final int radio;
+        private Color colorBorde; // null = sin borde
+
+        private PanelRedondeado(Color fondo, int radio) {
+            this.radio = radio;
+            setBackground(fondo);
+            setOpaque(false); // el fondo lo pintamos nosotros, redondeado
+        }
+
+        private void setColorBorde(Color colorBorde) {
+            this.colorBorde = colorBorde;
+            repaint();
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setColor(getBackground());
+            g2.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, radio, radio);
+            if (colorBorde != null) {
+                g2.setColor(colorBorde);
+                g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, radio, radio);
+            }
+            g2.dispose();
+            super.paintComponent(g);
+        }
+    }
+
+    // Botón con las esquinas redondeadas que se oscurece al pasar el ratón por encima
+    private static class BotonRedondeado extends JButton {
+        private final Color colorNormal;
+        private final Color colorEncima;
+        private boolean ratonEncima = false;
+
+        private BotonRedondeado(String texto, Color colorNormal, Color colorEncima, Color colorTexto) {
+            super(texto);
+            this.colorNormal = colorNormal;
+            this.colorEncima = colorEncima;
+            setForeground(colorTexto);
+            setFont(new Font(FUENTE, Font.BOLD, 13));
+            setContentAreaFilled(false); // así Swing no pinta el fondo cuadrado
+            setBorderPainted(false);
+            setFocusPainted(false);
+            setBorder(new EmptyBorder(10, 16, 10, 16));
+            setCursor(new Cursor(Cursor.HAND_CURSOR));
+            addMouseListener(new MouseAdapter() {
+                @Override
+                public void mouseEntered(MouseEvent e) {
+                    ratonEncima = true;
+                    repaint();
+                }
+
+                @Override
+                public void mouseExited(MouseEvent e) {
+                    ratonEncima = false;
+                    repaint();
+                }
+            });
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            if (!isEnabled()) {
+                g2.setColor(DESACTIVADO);
+            } else if (getModel().isPressed()) {
+                g2.setColor(colorEncima.darker());
+            } else if (ratonEncima) {
+                g2.setColor(colorEncima);
+            } else {
+                g2.setColor(colorNormal);
+            }
+            g2.fillRoundRect(0, 0, getWidth(), getHeight(), 14, 14);
+            g2.dispose();
+            super.paintComponent(g); // pinta el texto encima
         }
     }
 
