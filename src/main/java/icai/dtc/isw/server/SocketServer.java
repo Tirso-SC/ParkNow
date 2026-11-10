@@ -103,8 +103,17 @@ public class SocketServer extends Thread {
                         double lat = (double) session.get("latitud");
                         double lon = (double) session.get("longitud");
                         customerControler = new CustomerControler();
-                        boolean okAparcar = customerControler.aparcar(idAparcar, lat, lon);
-    
+
+                        // Antes de aparcar comprobamos que el punto está en una calle.
+                        // Se hace aquí, en el servidor, para que no se pueda saltar desde el cliente
+                        String errorUbicacion = customerControler.validarUbicacionAparcar(lat, lon);
+                        boolean okAparcar = false;
+                        if (errorUbicacion == null) {
+                            okAparcar = customerControler.aparcar(idAparcar, lat, lon);
+                        } else {
+                            session.put("error", errorUbicacion);
+                        }
+
                         mensajeOut.setContext("/aparcarResponse");
                         session.put("exito", okAparcar);
                         mensajeOut.setSession(session);
