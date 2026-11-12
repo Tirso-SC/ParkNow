@@ -31,8 +31,8 @@ public class ConnectionDAO {
 		return connectionDAO;
 	}
 	
-	// La base de datos cierra las conexiones que llevan mucho tiempo sin usarse.
-	// Si la nuestra se ha cerrado, abrimos una nueva antes de devolverla.
+	
+	
 	public synchronized Connection getConnection() {
 		try {
 			if (con == null || !con.isValid(2)) {

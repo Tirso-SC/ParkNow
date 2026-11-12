@@ -1,13 +1,13 @@
 package icai.dtc.isw.domain;
 
-// Un tramo de calle con plazas SER (zona azul, verde...), según los datos abiertos
-// del Ayuntamiento de Madrid. Cada fila del CSV se convierte en un objeto PlazaSER.
+
+
 public class PlazaSER {
 
     private String barrio;
     private String distrito;
-    private String color;       // "verde", "azul", "naranja", "alta rotación" o "rojo"
-    private int numeroPlazas;   // plazas que hay en este tramo de calle
+    private String color;       
+    private int numeroPlazas;   
     private double latitud;
     private double longitud;
 

@@ -46,7 +46,7 @@ public class CustomerDAO {
         return cu;
     }
 
-    // Busca el usuario por nombre y, si no existe en la base de datos, lo crea automáticamente
+    
     public Customer getClientePorNombre(String nombre) {
         Connection con = ConnectionDAO.getInstance().getConnection();
         Customer cu = null;
@@ -76,7 +76,7 @@ public class CustomerDAO {
         return cu;
     }
 
-    // Devuelve true si ya hay un usuario registrado con ese email
+    
     public boolean existeEmail(String email) {
         Connection con = ConnectionDAO.getInstance().getConnection();
         String consulta = "SELECT id FROM public.usuarios WHERE email = ?";
@@ -92,7 +92,7 @@ public class CustomerDAO {
         }
     }
 
-    // Devuelve true si ya hay un usuario registrado con ese nombre
+    
     public boolean existeNombre(String nombre) {
         Connection con = ConnectionDAO.getInstance().getConnection();
         String consulta = "SELECT id FROM public.usuarios WHERE nombre = ?";
@@ -108,7 +108,7 @@ public class CustomerDAO {
         }
     }
 
-    // Inserta un usuario nuevo. Recibe la contraseña ya cifrada (hash), nunca la original
+    
     public boolean registrarCliente(String nombre, String email, String passwordHash) {
         Connection con = ConnectionDAO.getInstance().getConnection();
         String sql = "INSERT INTO public.usuarios (nombre, email, contrasena) VALUES (?, ?, ?)";
@@ -124,7 +124,7 @@ public class CustomerDAO {
         }
     }
 
-    // Busca un usuario con ese email y ese hash de contraseña. Si no hay ninguno devuelve null
+    
     public Customer login(String email, String passwordHash) {
         Connection con = ConnectionDAO.getInstance().getConnection();
         Customer cu = null;
@@ -145,7 +145,7 @@ public class CustomerDAO {
         return cu;
     }
 
-    // Insertar en la tabla aparcamientos
+    
     public boolean aparcarCoche(int idUsuario, double latitud, double longitud) {
         Connection con = ConnectionDAO.getInstance().getConnection();
         String sql = "INSERT INTO public.aparcamientos (id_usuario, latitud, longitud) VALUES (?, ?, ?)";
@@ -160,7 +160,7 @@ public class CustomerDAO {
         }
     }
 
-    // Poner la hora de salida al marcharse
+    
     public boolean desaparcarCoche(int idUsuario) {
         Connection con = ConnectionDAO.getInstance().getConnection();
         String sql = "UPDATE public.aparcamientos SET hora_fin = CURRENT_TIMESTAMP " +
@@ -220,8 +220,8 @@ public class CustomerDAO {
         return texto;
     }
 
-    // Devuelve las coordenadas de los coches que están aparcados ahora (sin hora de salida).
-    // Cada elemento de la lista es un array {latitud, longitud}
+    
+    
     public ArrayList<double[]> getCochesAparcadosAhora() {
         Connection con = ConnectionDAO.getInstance().getConnection();
         String sql = "SELECT latitud, longitud FROM public.aparcamientos WHERE hora_fin IS NULL";
