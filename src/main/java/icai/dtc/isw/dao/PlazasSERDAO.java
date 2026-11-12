@@ -10,9 +10,11 @@ import java.util.ArrayList;
 import icai.dtc.isw.domain.PlazaSER;
 import icai.dtc.isw.util.ConversorUTM;
 
-// Lee las plazas SER del archivo CSV del Ayuntamiento (NO de la base de datos).
-// El archivo tiene unas 34.500 filas, así que solo lo leemos la primera vez que
-// alguien lo pide y después guardamos la lista en memoria.
+/**
+ * Lee las plazas SER del archivo CSV del Ayuntamiento (NO de la base de datos).
+ * El archivo tiene unas 34.500 filas, así que solo lo leemos la primera vez que
+ * alguien lo pide y después guardamos la lista en memoria.
+ */
 public class PlazasSERDAO {
 
     private static final String RUTA_CSV = "datos/calles_ser.csv";
@@ -21,8 +23,12 @@ public class PlazasSERDAO {
     // Así el CSV se lee una sola vez aunque el servidor cree un controlador por petición.
     private static ArrayList<PlazaSER> plazas = null;
 
-    // Devuelve todas las plazas SER. La primera vez lee el CSV.
-    // "synchronized" evita que dos peticiones a la vez lean el archivo dos veces.
+    /**
+     * Devuelve todas las plazas SER. La primera vez lee el CSV.
+     * "synchronized" evita que dos peticiones a la vez lean el archivo dos veces.
+     *
+     * @return lista con todas las plazas SER (vacía si no se encuentra el CSV)
+     */
     public synchronized ArrayList<PlazaSER> getPlazas() {
         if (plazas == null) {
             plazas = leerCSV();

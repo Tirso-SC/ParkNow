@@ -1,20 +1,24 @@
 package icai.dtc.isw.util;
 
-// Convierte coordenadas UTM (las que usa el Ayuntamiento, en metros)
-// a latitud y longitud en grados (las que usa nuestro mapa).
-//
-// ¿Qué es UTM? La Tierra se divide en 60 "husos" verticales de 6 grados.
-// Dentro de cada huso, cada punto se indica con dos distancias en metros:
-//   - x (Este): metros desde el meridiano central del huso, al que se le suman
-//     500.000 m para que nunca salgan números negativos.
-//   - y (Norte): metros desde el ecuador.
-// Madrid está en el huso 30 norte, cuyo meridiano central es la longitud -3º.
-//
-// ETRS89 (Europa) y WGS84 (GPS) se diferencian en menos de un metro,
-// así que los consideramos iguales.
-//
-// La fórmula es la "inversa de Transversa de Mercator" del libro de Snyder
-// (USGS, "Map Projections - A Working Manual"). Da precisión de centímetros.
+/**
+ * Convierte coordenadas UTM (las que usa el Ayuntamiento, en metros)
+ * a latitud y longitud en grados (las que usa nuestro mapa).
+ *
+ * <p>¿Qué es UTM? La Tierra se divide en 60 "husos" verticales de 6 grados.
+ * Dentro de cada huso, cada punto se indica con dos distancias en metros:</p>
+ * <ul>
+ *   <li>x (Este): metros desde el meridiano central del huso, al que se le suman
+ *       500.000 m para que nunca salgan números negativos.</li>
+ *   <li>y (Norte): metros desde el ecuador.</li>
+ * </ul>
+ * <p>Madrid está en el huso 30 norte, cuyo meridiano central es la longitud -3º.</p>
+ *
+ * <p>ETRS89 (Europa) y WGS84 (GPS) se diferencian en menos de un metro,
+ * así que los consideramos iguales.</p>
+ *
+ * <p>La fórmula es la "inversa de Transversa de Mercator" del libro de Snyder
+ * (USGS, "Map Projections - A Working Manual"). Da precisión de centímetros.</p>
+ */
 public class ConversorUTM {
 
     // Datos del elipsoide GRS80 (el de ETRS89): la Tierra no es una esfera perfecta,
@@ -28,7 +32,13 @@ public class ConversorUTM {
     // Huso 30: el meridiano central está en -3 grados
     private static final double LONGITUD_CENTRAL_HUSO_30 = -3.0;
 
-    // Recibe x e y en metros (UTM huso 30 norte) y devuelve {latitud, longitud} en grados
+    /**
+     * Pasa un punto en UTM (huso 30 norte) a latitud y longitud.
+     *
+     * @param x coordenada Este en metros (UTM huso 30 norte)
+     * @param y coordenada Norte en metros (UTM huso 30 norte)
+     * @return array {latitud, longitud} en grados
+     */
     public static double[] utmALatLon(double x, double y) {
         // Excentricidad al cuadrado: mide cuánto se aleja el elipsoide de una esfera
         double e2 = APLANAMIENTO * (2 - APLANAMIENTO);
