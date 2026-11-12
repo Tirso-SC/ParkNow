@@ -1,0 +1,67 @@
+// Pipeline de la rama develop.
+// Se lanza cuando hay cambios en develop: descarga el codigo, compila y pasa los tests.
+
+def ejecutar(String comando) {
+    if (isUnix()) {
+        sh comando
+    } else {
+        bat comando
+    }
+}
+
+pipeline {
+    agent any
+
+    tools {
+        maven 'Maven'
+    }
+
+    triggers {
+        // Mira cada 5 minutos si hay commits nuevos en develop
+        pollSCM('H/5 * * * *')
+    }
+
+    stages {
+        stage('Descargar codigo') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Compilar') {
+            steps {
+                script {
+                    ejecutar('mvn -B clean compile')
+                }
+            }
+        }
+
+        stage('Tests') {
+            steps {
+                script {
+                    ejecutar('mvn -B test')
+                }
+            }
+            post {
+                always {
+                    script {
+                        try {
+                            junit allowEmptyResults: true, testResults: 'target/surefire-reports/*.xml'
+                        } catch (err) {
+                            echo 'No se han podido publicar los resultados de los tests'
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'develop compila y pasa todos los tests'
+        }
+        failure {
+            echo 'Algo ha fallado en develop: revisar la consola'
+        }
+    }
+}
