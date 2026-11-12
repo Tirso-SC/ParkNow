@@ -77,7 +77,7 @@ public class SocketServer extends Thread {
                         Customer cuLogin = customerControler.login(emailLogin, passwordLogin);
     
                         mensajeOut.setContext("/loginResponse");
-                        session.remove("password"); 
+                        session.remove("password"); // la contraseña no vuelve al cliente
                         session.put("Customer", cuLogin);
                         mensajeOut.setSession(session);
                         objectOutputStream.writeObject(mensajeOut);
@@ -91,7 +91,7 @@ public class SocketServer extends Thread {
                         String error = customerControler.registrar(nombreRegistro, emailRegistro, passwordRegistro);
     
                         mensajeOut.setContext("/registroResponse");
-                        session.remove("password"); 
+                        session.remove("password"); // la contraseña no vuelve al cliente
                         session.put("exito", error == null);
                         session.put("error", error);
                         mensajeOut.setSession(session);
@@ -104,8 +104,8 @@ public class SocketServer extends Thread {
                         double lon = (double) session.get("longitud");
                         customerControler = new CustomerControler();
 
-                        
-                        
+                        // Antes de aparcar comprobamos que el punto está en una calle.
+                        // Se hace aquí, en el servidor, para que no se pueda saltar desde el cliente
                         String errorUbicacion = customerControler.validarUbicacionAparcar(lat, lon);
                         boolean okAparcar = false;
                         if (errorUbicacion == null) {
@@ -155,8 +155,8 @@ public class SocketServer extends Thread {
                         double latBarrio = (double) session.get("latitud");
                         double lonBarrio = (double) session.get("longitud");
                         customerControler = new CustomerControler();
-                        
-                        
+                        // Devuelve barrio, distrito, totalPlazas, plazasVerdes, plazasAzules,
+                        // cochesAparcados y plazasLibres; o solo "error" si no hay plazas SER cerca
                         HashMap<String, Object> infoBarrio = customerControler.infoBarrio(latBarrio, lonBarrio);
                         mensajeOut.setContext("/infoBarrioResponse");
                         session.putAll(infoBarrio);
@@ -170,8 +170,8 @@ public class SocketServer extends Thread {
                         break;
                 }
             } catch (RuntimeException ex) {
-                
-                
+                // Si algo falla (por ejemplo la base de datos), avisamos al cliente
+                // en vez de cerrar sin contestar, que el cliente confundiría con "no hay conexión"
                 ex.printStackTrace();
                 enviarError(objectOutputStream, "Error en el servidor: " + ex.getMessage());
             }
@@ -191,7 +191,7 @@ public class SocketServer extends Thread {
         }
     }
 
-    
+    // Envía al cliente un mensaje "/errorServidor" con la explicación del fallo
     private void enviarError(ObjectOutputStream salida, String texto) throws IOException {
         Message mensajeError = new Message();
         mensajeError.setContext("/errorServidor");
