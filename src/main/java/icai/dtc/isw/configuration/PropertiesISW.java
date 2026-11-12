@@ -7,10 +7,6 @@ import java.util.InvalidPropertiesFormatException;
 import java.util.Properties;
 
 public class PropertiesISW extends Properties{
-	
-	/**
-	 * 
-	 */
 	private static final long serialVersionUID = 1L;
 	private static PropertiesISW prop;
 	private static final String path="properties.xml";
@@ -20,13 +16,10 @@ public class PropertiesISW extends Properties{
 		try {
 			this.loadFromXML(getClass().getClassLoader().getResourceAsStream(path));
 		} catch (InvalidPropertiesFormatException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		};
 	}
@@ -36,7 +29,5 @@ public class PropertiesISW extends Properties{
 			prop=new PropertiesISW();
 		}
 		return prop;
-		
 	}
-	
 }

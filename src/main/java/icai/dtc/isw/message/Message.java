@@ -5,9 +5,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class Message implements Serializable {
-	/**
-	 * 
-	 */
 	private static final long serialVersionUID = 1L;
 	private String context;
 	private HashMap<String, Object> session;
@@ -16,7 +13,6 @@ public class Message implements Serializable {
 	public Message () {
 		context=new String();
 		session=new HashMap<String, Object>();	
-		
 	}
 
 	public String getContext() {

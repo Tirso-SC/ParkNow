@@ -1,7 +1,3 @@
-// Pipeline de la rama production.
-// Igual que la de develop, pero ademas genera los dos ejecutables (servidor y cliente)
-// y los guarda en Jenkins para poder descargarlos.
-
 def ejecutar(String comando) {
     if (isUnix()) {
         sh comando
@@ -18,7 +14,6 @@ pipeline {
     }
 
     triggers {
-        // Mira cada 5 minutos si hay commits nuevos en production
         pollSCM('H/5 * * * *')
     }
 

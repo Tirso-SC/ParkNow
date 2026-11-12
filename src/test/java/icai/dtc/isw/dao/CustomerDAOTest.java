@@ -12,7 +12,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class CustomerDAOTest {
-
     private static CustomerDAO customerDAO;
 
     @BeforeAll

@@ -1,6 +1,3 @@
-// Pipeline de la rama develop.
-// Se lanza cuando hay cambios en develop: descarga el codigo, compila y pasa los tests.
-
 def ejecutar(String comando) {
     if (isUnix()) {
         sh comando
@@ -17,7 +14,6 @@ pipeline {
     }
 
     triggers {
-        // Mira cada 5 minutos si hay commits nuevos en develop
         pollSCM('H/5 * * * *')
     }
 

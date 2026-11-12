@@ -31,8 +31,6 @@ public class ConnectionDAO {
 		return connectionDAO;
 	}
 	
-	// La base de datos cierra las conexiones que llevan mucho tiempo sin usarse.
-	// Si la nuestra se ha cerrado, abrimos una nueva antes de devolverla.
 	public synchronized Connection getConnection() {
 		try {
 			if (con == null || !con.isValid(2)) {
@@ -45,7 +43,6 @@ public class ConnectionDAO {
 	}
 
     public static void main(String[] args) {
-
         String url = PropertiesISW.getInstance().getProperty("ddbb.connection");
         String user = PropertiesISW.getInstance().getProperty("ddbb.user");
         String password = PropertiesISW.getInstance().getProperty("ddbb.password");
@@ -53,16 +50,12 @@ public class ConnectionDAO {
         try (Connection con = DriverManager.getConnection(url, user, password);
 			 PreparedStatement pst = con.prepareStatement("SELECT * FROM usuarios");
 			 ResultSet rs = pst.executeQuery()) {
-
             while (rs.next()) {
-            
                 System.out.print(rs.getString(1));
                 System.out.print(": ");
                 System.out.println(rs.getString(2));
             }
-
         } catch (SQLException ex) {
-
             System.out.println(ex.getMessage());
         }
     }

@@ -10,8 +10,6 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-
-
 import icai.dtc.isw.configuration.PropertiesISW;
 import icai.dtc.isw.domain.Customer;
 import icai.dtc.isw.message.Message;
@@ -29,28 +27,18 @@ public class Client {
 		this.port = Integer.parseInt(PropertiesISW.getInstance().getProperty("port"));
 	}
 	public HashMap<String, Object> sentMessage(String Context, HashMap<String, Object> session) {
-		//Configure connections
-		//String host = PropertiesISW.getInstance().getProperty("host");
-		//int port = Integer.parseInt(PropertiesISW.getInstance().getProperty("port"));
-
 		System.out.println("Host: "+host+" port"+port);
-		//Create a cliente class
-		//Client cliente=new Client(host, port);
 		
-		//HashMap<String,Object> session=new HashMap<String, Object>();
-		//session.put("/getCustomer","");
 		
 		Message mensajeEnvio=new Message();
 		Message mensajeVuelta=new Message();
-		mensajeEnvio.setContext(Context);///getCustomer"
+		mensajeEnvio.setContext(Context);
 		mensajeEnvio.setSession(session);
 		this.sent(mensajeEnvio,mensajeVuelta);
 
-		// Si el servidor no ha respondido, el contexto de vuelta sigue vacío
 		if (mensajeVuelta.getContext().isEmpty()) {
 			throw new IllegalStateException("No se ha podido conectar con el servidor. ¿Está arrancado?");
 		}
-		// El servidor ha contestado, pero avisando de que algo ha fallado allí
 		if (mensajeVuelta.getContext().equals("/errorServidor")) {
 			throw new IllegalStateException((String) mensajeVuelta.getSession().get("errorServidor"));
 		}
@@ -91,17 +79,13 @@ public class Client {
 
 				System.out.println("\nError a la vuelta");
 				break;
-		
 		}
-		//System.out.println("3.- En Main.- El valor devuelto es: "+((String)mensajeVuelta.getSession().get("Nombre")));
 		return session;
 	}
 	
 
-
 	public void sent(Message messageOut, Message messageIn) {
 		try {
-
 			System.out.println("Connecting to host " + host + " on port " + port + ".");
 
 			Socket echoSocket = null;
@@ -114,28 +98,21 @@ public class Client {
 				out = echoSocket.getOutputStream();
 				ObjectOutputStream objectOutputStream = new ObjectOutputStream(out);
 				
-				//Create the objetct to send
 				objectOutputStream.writeObject(messageOut);
 				
-				// create a DataInputStream so we can read data from it.
 		        ObjectInputStream objectInputStream = new ObjectInputStream(in);
 		        Message msg=(Message)objectInputStream.readObject();
 		        messageIn.setContext(msg.getContext());
 		        messageIn.setSession(msg.getSession());
-		        /*System.out.println("\n1.- El valor devuelto es: "+messageIn.getContext());
-		        String cadena=(String) messageIn.getSession().get("Nombre");
-		        System.out.println("\n2.- La cadena devuelta es: "+cadena);*/
-				
 			} catch (UnknownHostException e) {
 				System.err.println("Unknown host: " + host);
-				return; // no cerramos la aplicación: sentMessage avisará del error
+				return;
 			} catch (IOException e) {
 				System.err.println("Unable to get streams from server");
 				if (echoSocket != null) echoSocket.close();
-				return; // no cerramos la aplicación: sentMessage avisará del error
+				return;
 			}
 
-			/** Closing all the resources */
 			out.close();
 			in.close();			
 			echoSocket.close();
