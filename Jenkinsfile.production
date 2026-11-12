@@ -1,0 +1,77 @@
+// Pipeline de la rama production.
+// Igual que la de develop, pero ademas genera los dos ejecutables (servidor y cliente)
+// y los guarda en Jenkins para poder descargarlos.
+
+def ejecutar(String comando) {
+    if (isUnix()) {
+        sh comando
+    } else {
+        bat comando
+    }
+}
+
+pipeline {
+    agent any
+
+    tools {
+        maven 'Maven'
+    }
+
+    triggers {
+        // Mira cada 5 minutos si hay commits nuevos en production
+        pollSCM('H/5 * * * *')
+    }
+
+    stages {
+        stage('Descargar codigo') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Compilar') {
+            steps {
+                script {
+                    ejecutar('mvn -B clean compile')
+                }
+            }
+        }
+
+        stage('Tests') {
+            steps {
+                script {
+                    ejecutar('mvn -B test')
+                }
+            }
+            post {
+                always {
+                    script {
+                        try {
+                            junit allowEmptyResults: true, testResults: 'target/surefire-reports/*.xml'
+                        } catch (err) {
+                            echo 'No se han podido publicar los resultados de los tests'
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Generar JAR') {
+            steps {
+                script {
+                    ejecutar('mvn -B package -DskipTests')
+                }
+                archiveArtifacts artifacts: 'target/server_isw.jar, target/client_isw.jar', fingerprint: true
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'production lista: server_isw.jar y client_isw.jar generados'
+        }
+        failure {
+            echo 'Algo ha fallado en production: revisar la consola'
+        }
+    }
+}
